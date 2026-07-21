@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Halftone / Duotone — Print Proof Tool</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #f4f6f8;
+    --panel: #ffffff;
+    --panel-2: #eef1f4;
+    --line: #d7dce2;
+    --line-soft: #e4e8ec;
+    --ink: #0c2a4d;
+    --paper: #bfe4ff;
+    --accent: #1f6fb0;
+    --accent-dim: #a9cbe6;
+    --text: #171a1e;
+    --text-mute: #5b6572;
+    --text-faint: #93a0ad;
+    --radius: 3px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(1200px 600px at 15% -10%, rgba(31,111,176,0.06), transparent 60%),
+      var(--bg);
+    color:var(--text);
+    font-family:'IBM Plex Mono', monospace;
+    min-height:100vh;
+    padding:32px 20px 80px;
+  }
+  .wrap{max-width:1180px;margin:0 auto;}
+
+  header{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;
+    gap:24px;
+    border-bottom:1px solid var(--line);
+    padding-bottom:20px;
+    margin-bottom:28px;
+    flex-wrap:wrap;
+  }
+  .brand{display:flex;align-items:center;gap:14px;}
+  .brand-mark{
+    width:38px;height:38px;flex:none;position:relative;
+    background: radial-gradient(circle at 30% 30%, var(--accent) 0 3px, transparent 3.5px) 0 0/13px 13px,
+                radial-gradient(circle at 70% 70%, var(--accent-dim) 0 5px, transparent 5.5px) 0 0/19px 19px;
+    border:1px solid var(--line);
+    border-radius:6px;
+    background-color:#0d1a26;
+  }
+  h1{
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:700;
+    font-size:22px;
+    letter-spacing:-0.01em;
+    margin:0;
+    color:#12151a;
+  }
+  .tagline{
+    font-size:11px;
+    color:var(--text-mute);
+    letter-spacing:.06em;
+    text-transform:uppercase;
+    margin-top:4px;
+  }
+  .specs{
+    display:flex;
+    gap:22px;
+    font-size:10.5px;
+    color:var(--text-faint);
+    letter-spacing:.05em;
+    text-transform:uppercase;
+  }
+  .specs div span{display:block;color:var(--accent);font-size:13px;letter-spacing:0;margin-top:2px;font-family:'Space Grotesk',sans-serif;}
+
+  .layout{
+    display:grid;
+    grid-template-columns:300px 1fr;
+    gap:20px;
+    align-items:start;
+  }
+  @media (max-width: 900px){
+    .layout{grid-template-columns:1fr;}
+  }
+
+  .panel{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:18px 18px 20px;
+  }
+  .panel + .panel{margin-top:16px;}
+
+  .section-label{
+    font-size:10px;
+    letter-spacing:.12em;
+    text-transform:uppercase;
+    color:var(--accent);
+    margin:0 0 12px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .section-label::before{
+    content:'';
+    width:6px;height:6px;
+    background:var(--accent);
+    border-radius:50%;
+    flex:none;
+  }
+
+  .field{margin-bottom:16px;}
+  .field:last-child{margin-bottom:0;}
+  .field label{
+    display:block;
+    font-size:11px;
+    color:var(--text-mute);
+    margin-bottom:7px;
+    letter-spacing:.03em;
+  }
+
+  input[type="file"]{
+    width:100%;
+    font-family:inherit;
+    font-size:11px;
+    color:var(--text-mute);
+    background:var(--panel-2);
+    border:1px dashed var(--line);
+    border-radius:var(--radius);
+    padding:14px 10px;
+  }
+  input[type="file"]::file-selector-button{
+    font-family:inherit;
+    font-size:11px;
+    background:var(--ink);
+    color:var(--paper);
+    border:1px solid var(--accent-dim);
+    border-radius:var(--radius);
+    padding:6px 10px;
+    margin-right:10px;
+    cursor:pointer;
+  }
+
+  select{
+    width:100%;
+    background:var(--panel-2);
+    color:var(--text);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    font-family:inherit;
+    font-size:12px;
+    padding:9px 10px;
+    cursor:pointer;
+  }
+
+  input[type="range"]{
+    width:100%;
+    accent-color:var(--accent);
+    background:transparent;
+  }
+
+  .range-row{display:flex;align-items:center;gap:10px;}
+  .range-val{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:13px;
+    color:var(--accent);
+    min-width:44px;
+    text-align:right;
+  }
+
+  .color-row{display:flex;align-items:center;gap:10px;}
+  .swatch-wrap{position:relative;flex:none;}
+  input[type="color"]{
+    width:38px;height:38px;
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    background:none;
+    padding:0;
+    cursor:pointer;
+  }
+  .hex-input{
+    flex:1;
+    background:var(--panel-2);
+    border:1px solid var(--line);
+    color:var(--text);
+    font-family:inherit;
+    font-size:12px;
+    letter-spacing:.03em;
+    padding:9px 10px;
+    border-radius:var(--radius);
+    text-transform:uppercase;
+  }
+  .hex-input:focus, select:focus{outline:none;border-color:var(--accent-dim);}
+  .color-role{
+    font-size:9.5px;
+    color:var(--text-faint);
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    margin-top:6px;
+  }
+
+  .swap-btn{
+    width:100%;
+    margin-top:14px;
+    background:none;
+    border:1px solid var(--line);
+    color:var(--text-mute);
+    font-family:inherit;
+    font-size:10.5px;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+    padding:8px;
+    border-radius:var(--radius);
+    cursor:pointer;
+  }
+  .swap-btn:hover{border-color:var(--accent-dim);color:var(--accent);}
+
+  .toggle-btn{
+    width:100%;
+    background:none;
+    border:1px solid var(--line);
+    color:var(--text-mute);
+    font-family:inherit;
+    font-weight:500;
+    font-size:11.5px;
+    letter-spacing:.03em;
+    padding:10px;
+    border-radius:var(--radius);
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+  }
+  .toggle-btn:hover{border-color:var(--accent-dim);}
+  .toggle-btn.active{
+    background:var(--accent);
+    border-color:var(--accent);
+    color:#ffffff;
+  }
+  .toggle-btn:disabled{
+    color:var(--text-faint);
+    cursor:not-allowed;
+    border-color:var(--line-soft);
+  }
+  .toggle-btn .dot{
+    width:7px;height:7px;border-radius:50%;
+    background:var(--text-faint);
+    flex:none;
+  }
+  .toggle-btn.active .dot{background:#ffffff;}
+
+  #outputCanvas.erasing{cursor:crosshair;}
+  .btn-secondary{
+    width:100%;
+    margin-top:10px;
+    background:none;
+    border:1px solid var(--line);
+    color:var(--text-mute);
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:500;
+    font-size:12.5px;
+    padding:11px;
+    border-radius:var(--radius);
+    cursor:pointer;
+  }
+  .btn-secondary:hover{border-color:var(--accent-dim);color:var(--accent);}
+
+  .btn-primary{
+    width:100%;
+    background:var(--accent);
+    color:#ffffff;
+    border:none;
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:600;
+    font-size:13px;
+    padding:13px;
+    border-radius:var(--radius);
+    cursor:pointer;
+    letter-spacing:.01em;
+  }
+  .btn-primary:disabled{
+    background:var(--panel-2);
+    color:var(--text-faint);
+    cursor:not-allowed;
+  }
+  .btn-primary:not(:disabled):hover{background:#185f9c;}
+
+  .stage-area{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:20px;
+    min-height:420px;
+  }
+  .stage-tabs{
+    display:flex;
+    gap:2px;
+    margin-bottom:18px;
+    border-bottom:1px solid var(--line);
+  }
+  .stage-tab{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:12px;
+    font-weight:500;
+    color:var(--text-faint);
+    background:none;
+    border:none;
+    padding:10px 4px 12px;
+    margin-right:22px;
+    cursor:pointer;
+    position:relative;
+  }
+  .stage-tab.active{color:var(--text);}
+  .stage-tab.active::after{
+    content:'';
+    position:absolute;left:0;right:0;bottom:-1px;height:2px;
+    background:var(--accent);
+  }
+
+  .empty-state{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    min-height:340px;
+    color:var(--text-faint);
+    text-align:center;
+    gap:10px;
+  }
+  .empty-dots{
+    display:grid;
+    grid-template-columns:repeat(6,1fr);
+    gap:6px;
+    margin-bottom:6px;
+  }
+  .empty-dots span{
+    width:8px;height:8px;border-radius:50%;
+    background:var(--line);
+  }
+  .empty-state p{font-size:12px;margin:0;letter-spacing:.03em;}
+
+  .stage-body{display:grid;}
+  .crop-view, .output-view{
+    grid-area:1/1;
+    visibility:hidden;
+    pointer-events:none;
+    opacity:0;
+  }
+  .crop-view.active, .output-view.active{
+    visibility:visible;
+    pointer-events:auto;
+    opacity:1;
+  }
+
+  .crop-stage{
+    position:relative;
+    display:inline-block;
+    max-width:100%;
+    line-height:0;
+    touch-action:none;
+  }
+  #sourceImg{
+    display:block;
+    max-width:520px;
+    width:100%;
+    height:auto;
+    user-select:none;
+    -webkit-user-drag:none;
+  }
+  .crop-box{
+    position:absolute;
+    border:1.5px solid var(--accent);
+    box-shadow:0 0 0 2000px rgba(8,10,12,0.72);
+    cursor:move;
+  }
+  .crop-box .handle{
+    position:absolute;
+    width:13px;height:13px;
+    background:var(--accent);
+    border:2px solid #0a0c0f;
+    border-radius:2px;
+  }
+  .handle.tl{left:-8px;top:-8px;cursor:nwse-resize;}
+  .handle.tr{right:-8px;top:-8px;cursor:nesw-resize;}
+  .handle.bl{left:-8px;bottom:-8px;cursor:nesw-resize;}
+  .handle.br{right:-8px;bottom:-8px;cursor:nwse-resize;}
+
+  .crop-hint{
+    margin-top:14px;
+    font-size:10.5px;
+    color:var(--text-faint);
+    letter-spacing:.03em;
+  }
+
+  .output-frame{
+    background:
+      linear-gradient(45deg, #e2e6ea 25%, transparent 25%) 0 0/16px 16px,
+      linear-gradient(-45deg, #e2e6ea 25%, transparent 25%) 0 0/16px 16px,
+      linear-gradient(45deg, transparent 75%, #e2e6ea 75%) 0 0/16px 16px,
+      linear-gradient(-45deg, transparent 75%, #e2e6ea 75%) 0 0/16px 16px,
+      #f7f9fa;
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:14px;
+    min-height:340px;
+  }
+  #outputCanvas{
+    max-width:100%;
+    max-height:520px;
+    display:block;
+    image-rendering:pixelated;
+    touch-action:none;
+  }
+
+  .proof-footer{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-top:16px;
+    padding-top:14px;
+    border-top:1px solid var(--line-soft);
+    font-size:10px;
+    color:var(--text-faint);
+    letter-spacing:.05em;
+    text-transform:uppercase;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <div class="brand-mark"></div>
+      <div>
+        <h1>Halftone / Duotone</h1>
+        <div class="tagline">Screen print proof tool</div>
+      </div>
+    </div>
+    <div class="specs">
+      <div>Screen<span id="specScreen">10px</span></div>
+      <div>Aspect<span id="specAspect">1:1</span></div>
+      <div>Ink<span id="specInk">&mdash;</span></div>
+    </div>
+  </header>
+
+  <div class="layout">
+
+    <div class="controls">
+
+      <div class="panel">
+        <p class="section-label">Source image</p>
+        <div class="field">
+          <label for="fileInput">Upload photo</label>
+          <input type="file" id="fileInput" accept="image/*" />
+        </div>
+        <div class="field" style="margin-bottom:0;">
+          <label for="aspectSelect">Crop aspect</label>
+          <select id="aspectSelect">
+            <option value="1">1:1 — square</option>
+            <option value="0.8">4:5 — portrait</option>
+            <option value="1.5">3:2 — classic</option>
+            <option value="1.777">16:9 — wide</option>
+            <option value="free">Free form</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="panel">
+        <p class="section-label">Halftone screen</p>
+        <div class="field" style="margin-bottom:0;">
+          <label for="resSlider">Dot grid size</label>
+          <div class="range-row">
+            <input type="range" id="resSlider" min="3" max="36" value="10" step="1" />
+            <span class="range-val" id="resVal">10px</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <p class="section-label">Duotone ink</p>
+        <div class="field">
+          <div class="color-row">
+            <input type="color" id="color1" value="#0c2a4d" />
+            <input type="text" class="hex-input" id="color1Hex" value="#0C2A4D" maxlength="7" />
+          </div>
+          <div class="color-role">Shadows — dot color</div>
+        </div>
+        <div class="field" style="margin-bottom:0;">
+          <div class="color-row">
+            <input type="color" id="color2" value="#bfe4ff" />
+            <input type="text" class="hex-input" id="color2Hex" value="#BFE4FF" maxlength="7" />
+          </div>
+          <div class="color-role">Highlights — paper color</div>
+        </div>
+        <button class="swap-btn" id="swapColors">Swap shadows / highlights</button>
+      </div>
+
+      <div class="panel">
+        <p class="section-label">Canvas background</p>
+        <div class="field" style="margin-bottom:0;">
+          <div class="color-row">
+            <input type="color" id="bgColor" value="#ffffff" />
+            <input type="text" class="hex-input" id="bgColorHex" value="#FFFFFF" maxlength="7" />
+          </div>
+          <div class="color-role">Shows through erased or transparent areas</div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <p class="section-label">Eraser</p>
+        <div class="field">
+          <label for="brushSlider">Brush size</label>
+          <div class="range-row">
+            <input type="range" id="brushSlider" min="6" max="90" value="26" step="1" />
+            <span class="range-val" id="brushVal">26px</span>
+          </div>
+        </div>
+        <button class="toggle-btn" id="eraseToggle" disabled>
+          <span class="dot"></span>
+          <span id="eraseToggleLabel">Enable eraser</span>
+        </button>
+      </div>
+
+      <div class="panel">
+        <button class="btn-primary" id="downloadBtn" disabled>Download PNG</button>
+        <button class="btn-secondary" id="resetBtn">Reset to defaults</button>
+      </div>
+
+    </div>
+
+    <div class="stage-area">
+      <div class="stage-tabs">
+        <button class="stage-tab active" data-tab="crop">01 — Crop</button>
+        <button class="stage-tab" data-tab="output">02 — Halftone proof</button>
+      </div>
+
+      <div id="emptyState" class="empty-state">
+        <div class="empty-dots">
+          <span></span><span></span><span></span><span></span><span></span><span></span>
+        </div>
+        <p>Upload a photo to start the proof.</p>
+      </div>
+
+      <div class="stage-body">
+        <div class="crop-view" id="cropView">
+          <div class="crop-stage" id="cropStage">
+            <img id="sourceImg" alt="Uploaded source" />
+            <div class="crop-box" id="cropBox">
+              <div class="handle tl" data-corner="tl"></div>
+              <div class="handle tr" data-corner="tr"></div>
+              <div class="handle bl" data-corner="bl"></div>
+              <div class="handle br" data-corner="br"></div>
+            </div>
+          </div>
+          <p class="crop-hint">Drag the frame to reposition, drag a corner to resize. Locked to the selected aspect ratio.</p>
+        </div>
+
+        <div class="output-view" id="outputView">
+          <div class="output-frame">
+            <canvas id="outputCanvas"></canvas>
+          </div>
+          <div class="proof-footer">
+            <span id="proofDims">— × — px</span>
+            <span id="proofDots">— dots</span>
+          </div>
+          <p class="crop-hint">Turn on the eraser to brush away parts of the halftone and reveal the background color underneath.</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+(function(){
+  const fileInput = document.getElementById('fileInput');
+  const sourceImg = document.getElementById('sourceImg');
+  const cropStage = document.getElementById('cropStage');
+  const cropBox = document.getElementById('cropBox');
+  const aspectSelect = document.getElementById('aspectSelect');
+  const resSlider = document.getElementById('resSlider');
+  const resVal = document.getElementById('resVal');
+  const color1 = document.getElementById('color1');
+  const color1Hex = document.getElementById('color1Hex');
+  const color2 = document.getElementById('color2');
+  const color2Hex = document.getElementById('color2Hex');
+  const bgColor = document.getElementById('bgColor');
+  const bgColorHex = document.getElementById('bgColorHex');
+  const swapColors = document.getElementById('swapColors');
+  const brushSlider = document.getElementById('brushSlider');
+  const brushVal = document.getElementById('brushVal');
+  const eraseToggle = document.getElementById('eraseToggle');
+  const eraseToggleLabel = document.getElementById('eraseToggleLabel');
+  const resetBtn = document.getElementById('resetBtn');
+  const downloadBtn = document.getElementById('downloadBtn');
+  const outputCanvas = document.getElementById('outputCanvas');
+  const octx = outputCanvas.getContext('2d');
+  const emptyState = document.getElementById('emptyState');
+  const cropView = document.getElementById('cropView');
+  const outputView = document.getElementById('outputView');
+  const tabs = document.querySelectorAll('.stage-tab');
+  const specScreen = document.getElementById('specScreen');
+  const specAspect = document.getElementById('specAspect');
+  const specInk = document.getElementById('specInk');
+  const proofDims = document.getElementById('proofDims');
+  const proofDots = document.getElementById('proofDots');
+
+  const DEFAULTS = {
+    aspect: '1',
+    resolution: 10,
+    color1: '#0C2A4D',
+    color2: '#BFE4FF',
+    bg: '#FFFFFF',
+    brush: 26
+  };
+
+  let img = null;
+  let crop = {x:0,y:0,w:100,h:100};
+  let drag = null;
+  let renderTimer = null;
+  let haloCanvas = null;
+  let haloCtx = null;
+  let eraseMode = false;
+  let erasing = false;
+
+  function hasImage(){ return !!img; }
+
+  function setTab(name){
+    tabs.forEach(t=>t.classList.toggle('active', t.dataset.tab===name));
+    cropView.classList.toggle('active', name==='crop');
+    outputView.classList.toggle('active', name==='output');
+  }
+  tabs.forEach(t=>t.addEventListener('click', ()=>{
+    if(!hasImage()) return;
+    setTab(t.dataset.tab);
+  }));
+
+  fileInput.addEventListener('change', (e)=>{
+    const file = e.target.files && e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev)=>{
+      const image = new Image();
+      image.onload = ()=>{
+        img = image;
+        sourceImg.src = ev.target.result;
+      };
+      image.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+
+  sourceImg.addEventListener('load', ()=>{
+    emptyState.style.display = 'none';
+    cropView.style.display = '';
+    requestAnimationFrame(()=>{
+      initCropBox();
+      setTab('crop');
+      scheduleRender(0);
+    });
+  });
+
+  function getAspectValue(){
+    const v = aspectSelect.value;
+    return v === 'free' ? null : parseFloat(v);
+  }
+
+  function stageDims(){
+    return { w: sourceImg.clientWidth, h: sourceImg.clientHeight };
+  }
+
+  function initCropBox(){
+    const {w:dispW, h:dispH} = stageDims();
+    const aspect = getAspectValue() || 1;
+    let boxW, boxH;
+    if(dispW / dispH > aspect){
+      boxH = dispH * 0.86;
+      boxW = boxH * aspect;
+    } else {
+      boxW = dispW * 0.86;
+      boxH = boxW / aspect;
+    }
+    crop = {
+      x: (dispW - boxW)/2,
+      y: (dispH - boxH)/2,
+      w: boxW,
+      h: boxH
+    };
+    paintCropBox();
+  }
+
+  function paintCropBox(){
+    cropBox.style.left = crop.x + 'px';
+    cropBox.style.top = crop.y + 'px';
+    cropBox.style.width = crop.w + 'px';
+    cropBox.style.height = crop.h + 'px';
+  }
+
+  aspectSelect.addEventListener('change', ()=>{
+    specAspect.textContent = aspectSelect.options[aspectSelect.selectedIndex].text.split(' ')[0];
+    if(!hasImage()) return;
+    const {w:dispW, h:dispH} = stageDims();
+    const aspect = getAspectValue();
+    if(aspect){
+      const cx = crop.x + crop.w/2, cy = crop.y + crop.h/2;
+      let newW = crop.w, newH = newW / aspect;
+      if(newH > dispH){ newH = dispH * 0.9; newW = newH * aspect; }
+      if(newW > dispW){ newW = dispW * 0.9; newH = newW / aspect; }
+      crop.w = newW; crop.h = newH;
+      crop.x = clamp(cx - newW/2, 0, dispW - newW);
+      crop.y = clamp(cy - newH/2, 0, dispH - newH);
+      paintCropBox();
+      scheduleRender(0);
+    }
+  });
+  specAspect.textContent = '1:1';
+
+  function clamp(v,min,max){ return Math.max(min, Math.min(max, v)); }
+
+  cropBox.addEventListener('pointerdown', (e)=>{
+    const corner = e.target.dataset && e.target.dataset.corner;
+    drag = {
+      mode: corner || 'move',
+      startX: e.clientX,
+      startY: e.clientY,
+      startBox: {...crop}
+    };
+    e.preventDefault();
+  });
+
+  window.addEventListener('pointermove', (e)=>{
+    if(!drag) return;
+    const {w:dispW, h:dispH} = stageDims();
+    const dx = e.clientX - drag.startX;
+    const dy = e.clientY - drag.startY;
+    const sb = drag.startBox;
+    const aspect = getAspectValue();
+    const minSize = 24;
+
+    if(drag.mode === 'move'){
+      crop.x = clamp(sb.x + dx, 0, dispW - sb.w);
+      crop.y = clamp(sb.y + dy, 0, dispH - sb.h);
+    } else {
+      let anchorX, anchorY, newW, newH;
+      if(drag.mode === 'br'){
+        anchorX = sb.x; anchorY = sb.y;
+        newW = sb.w + dx;
+        newH = aspect ? newW/aspect : sb.h + dy;
+      } else if(drag.mode === 'tl'){
+        anchorX = sb.x+sb.w; anchorY = sb.y+sb.h;
+        newW = sb.w - dx;
+        newH = aspect ? newW/aspect : sb.h - dy;
+      } else if(drag.mode === 'tr'){
+        anchorX = sb.x; anchorY = sb.y+sb.h;
+        newW = sb.w + dx;
+        newH = aspect ? newW/aspect : sb.h - dy;
+      } else if(drag.mode === 'bl'){
+        anchorX = sb.x+sb.w; anchorY = sb.y;
+        newW = sb.w - dx;
+        newH = aspect ? newW/aspect : sb.h + dy;
+      }
+      newW = Math.max(minSize, newW);
+      newH = Math.max(minSize, newH);
+
+      let newX, newY;
+      if(drag.mode === 'br'){ newX = anchorX; newY = anchorY; }
+      else if(drag.mode === 'tl'){ newX = anchorX - newW; newY = anchorY - newH; }
+      else if(drag.mode === 'tr'){ newX = anchorX; newY = anchorY - newH; }
+      else if(drag.mode === 'bl'){ newX = anchorX - newW; newY = anchorY; }
+
+      newX = clamp(newX, 0, dispW - 1);
+      newY = clamp(newY, 0, dispH - 1);
+      newW = Math.min(newW, dispW - newX);
+      newH = Math.min(newH, dispH - newY);
+      if(aspect){
+        if(newW/aspect > newH){ newW = newH*aspect; if(drag.mode==='tl'||drag.mode==='bl'){newX = anchorX-newW;} }
+      }
+
+      crop.x = newX; crop.y = newY; crop.w = newW; crop.h = newH;
+    }
+    paintCropBox();
+  });
+
+  window.addEventListener('pointerup', ()=>{
+    if(drag){ drag = null; scheduleRender(0); }
+  });
+
+  function scheduleRender(delay){
+    clearTimeout(renderTimer);
+    renderTimer = setTimeout(renderHalftone, delay===undefined?140:delay);
+  }
+
+  resSlider.addEventListener('input', ()=>{
+    resVal.textContent = resSlider.value + 'px';
+    specScreen.textContent = resSlider.value + 'px';
+    scheduleRender();
+  });
+
+  function syncColorInputs(picker, hexField){
+    picker.addEventListener('input', ()=>{
+      hexField.value = picker.value.toUpperCase();
+      scheduleRender();
+    });
+    hexField.addEventListener('input', ()=>{
+      let v = hexField.value.trim();
+      if(v[0] !== '#') v = '#'+v;
+      if(/^#[0-9A-Fa-f]{6}$/.test(v)){
+        picker.value = v;
+        scheduleRender();
+      }
+    });
+    hexField.addEventListener('blur', ()=>{
+      hexField.value = picker.value.toUpperCase();
+    });
+  }
+  syncColorInputs(color1, color1Hex);
+  syncColorInputs(color2, color2Hex);
+
+  swapColors.addEventListener('click', ()=>{
+    const c1 = color1.value, c2 = color2.value;
+    color1.value = c2; color2.value = c1;
+    color1Hex.value = c2.toUpperCase(); color2Hex.value = c1.toUpperCase();
+    scheduleRender(0);
+  });
+
+  function renderHalftone(){
+    if(!hasImage()) return;
+    const {w:dispW, h:dispH} = stageDims();
+    if(!dispW || !dispH) { scheduleRender(50); return; }
+    const scaleX = img.naturalWidth / dispW;
+    const scaleY = img.naturalHeight / dispH;
+    const sx = crop.x*scaleX, sy = crop.y*scaleY, sw = crop.w*scaleX, sh = crop.h*scaleY;
+    if(![sx,sy,sw,sh].every(Number.isFinite) || sw<=0 || sh<=0) return;
+
+    const maxDim = 760;
+    let outW = sw, outH = sh;
+    if(Math.max(outW,outH) > maxDim){
+      const s = maxDim/Math.max(outW,outH);
+      outW = Math.round(outW*s); outH = Math.round(outH*s);
+    } else {
+      outW = Math.round(outW); outH = Math.round(outH);
+    }
+    outW = Math.max(outW,10); outH = Math.max(outH,10);
+    if(!Number.isFinite(outW) || !Number.isFinite(outH)) return;
+
+    const src = document.createElement('canvas');
+    src.width = outW; src.height = outH;
+    const sctx = src.getContext('2d');
+    sctx.drawImage(img, sx, sy, sw, sh, 0, 0, outW, outH);
+    const data = sctx.getImageData(0,0,outW,outH).data;
+
+    haloCanvas = document.createElement('canvas');
+    haloCanvas.width = outW; haloCanvas.height = outH;
+    haloCtx = haloCanvas.getContext('2d');
+    haloCtx.fillStyle = color2.value;
+    haloCtx.fillRect(0,0,outW,outH);
+    haloCtx.fillStyle = color1.value;
+
+    const cell = parseInt(resSlider.value, 10);
+    const maxRadius = cell * 0.62;
+    const step = Math.max(1, Math.floor(cell/4));
+    let dotCount = 0;
+
+    for(let gy=0; gy*cell < outH + cell; gy++){
+      const rowOffset = (gy % 2 === 1) ? cell/2 : 0;
+      for(let gx=-1; gx*cell < outW + cell; gx++){
+        const cx = gx*cell + cell/2 + rowOffset;
+        const cy = gy*cell + cell/2;
+        if(cx + cell/2 < 0 || cx - cell/2 > outW || cy + cell/2 < 0 || cy - cell/2 > outH) continue;
+
+        const x0 = Math.max(0, Math.floor(cx - cell/2));
+        const x1 = Math.min(outW, Math.ceil(cx + cell/2));
+        const y0 = Math.max(0, Math.floor(cy - cell/2));
+        const y1 = Math.min(outH, Math.ceil(cy + cell/2));
+        if(x1<=x0 || y1<=y0) continue;
+
+        let total = 0, count = 0;
+        for(let py=y0; py<y1; py+=step){
+          for(let px=x0; px<x1; px+=step){
+            const idx = (py*outW+px)*4;
+            const r = data[idx], g = data[idx+1], b = data[idx+2];
+            total += (0.299*r + 0.587*g + 0.114*b) / 255;
+            count++;
+          }
+        }
+        if(count===0) continue;
+        const avgLum = total/count;
+        const radius = maxRadius * Math.pow(1-avgLum, 0.9);
+        if(radius < 0.4) continue;
+        haloCtx.beginPath();
+        haloCtx.arc(cx, cy, radius, 0, Math.PI*2);
+        haloCtx.fill();
+        dotCount++;
+      }
+    }
+
+    downloadBtn.disabled = false;
+    eraseToggle.disabled = false;
+    specInk.textContent = color1.value.toUpperCase();
+    proofDims.textContent = outW + ' × ' + outH + ' px';
+    proofDots.textContent = dotCount.toLocaleString() + ' dots';
+
+    haloCtx.globalCompositeOperation = 'destination-in';
+    haloCtx.drawImage(src, 0, 0);
+    haloCtx.globalCompositeOperation = 'source-over';
+
+    compositeOutput();
+    setTab('output');
+  }
+
+  function compositeOutput(){
+    if(!haloCanvas) return;
+    outputCanvas.width = haloCanvas.width;
+    outputCanvas.height = haloCanvas.height;
+    octx.clearRect(0,0,outputCanvas.width,outputCanvas.height);
+    octx.fillStyle = bgColor.value;
+    octx.fillRect(0,0,outputCanvas.width,outputCanvas.height);
+    octx.drawImage(haloCanvas,0,0);
+  }
+
+  function canvasPointFromEvent(e){
+    const rect = outputCanvas.getBoundingClientRect();
+    const scaleX = outputCanvas.width / rect.width;
+    const scaleY = outputCanvas.height / rect.height;
+    return { x:(e.clientX-rect.left)*scaleX, y:(e.clientY-rect.top)*scaleY, scale:scaleX };
+  }
+
+  function eraseAt(x,y,scale){
+    if(!haloCtx) return;
+    const r = parseInt(brushSlider.value,10) * scale;
+    haloCtx.save();
+    haloCtx.globalCompositeOperation = 'destination-out';
+    haloCtx.beginPath();
+    haloCtx.arc(x,y,r,0,Math.PI*2);
+    haloCtx.fill();
+    haloCtx.restore();
+    compositeOutput();
+  }
+
+  outputCanvas.addEventListener('pointerdown',(e)=>{
+    if(!eraseMode || !haloCanvas) return;
+    erasing = true;
+    const p = canvasPointFromEvent(e);
+    eraseAt(p.x, p.y, p.scale);
+    e.preventDefault();
+  });
+  outputCanvas.addEventListener('pointermove',(e)=>{
+    if(!erasing) return;
+    const p = canvasPointFromEvent(e);
+    eraseAt(p.x, p.y, p.scale);
+    e.preventDefault();
+  });
+  window.addEventListener('pointerup', ()=>{ erasing = false; });
+
+  eraseToggle.addEventListener('click', ()=>{
+    eraseMode = !eraseMode;
+    eraseToggle.classList.toggle('active', eraseMode);
+    eraseToggleLabel.textContent = eraseMode ? 'Eraser on' : 'Enable eraser';
+    outputCanvas.classList.toggle('erasing', eraseMode);
+  });
+
+  brushSlider.addEventListener('input', ()=>{
+    brushVal.textContent = brushSlider.value + 'px';
+  });
+
+  function syncBgColor(){
+    bgColor.addEventListener('input', ()=>{
+      bgColorHex.value = bgColor.value.toUpperCase();
+      compositeOutput();
+    });
+    bgColorHex.addEventListener('input', ()=>{
+      let v = bgColorHex.value.trim();
+      if(v[0] !== '#') v = '#'+v;
+      if(/^#[0-9A-Fa-f]{6}$/.test(v)){
+        bgColor.value = v;
+        compositeOutput();
+      }
+    });
+    bgColorHex.addEventListener('blur', ()=>{
+      bgColorHex.value = bgColor.value.toUpperCase();
+    });
+  }
+  syncBgColor();
+
+  resetBtn.addEventListener('click', ()=>{
+    aspectSelect.value = DEFAULTS.aspect;
+    specAspect.textContent = aspectSelect.options[aspectSelect.selectedIndex].text.split(' ')[0];
+    resSlider.value = DEFAULTS.resolution;
+    resVal.textContent = DEFAULTS.resolution + 'px';
+    specScreen.textContent = DEFAULTS.resolution + 'px';
+    color1.value = DEFAULTS.color1; color1Hex.value = DEFAULTS.color1;
+    color2.value = DEFAULTS.color2; color2Hex.value = DEFAULTS.color2;
+    bgColor.value = DEFAULTS.bg; bgColorHex.value = DEFAULTS.bg;
+    brushSlider.value = DEFAULTS.brush;
+    brushVal.textContent = DEFAULTS.brush + 'px';
+    eraseMode = false;
+    eraseToggle.classList.remove('active');
+    eraseToggleLabel.textContent = 'Enable eraser';
+    outputCanvas.classList.remove('erasing');
+    if(hasImage()){
+      initCropBox();
+      scheduleRender(0);
+    }
+  });
+
+  downloadBtn.addEventListener('click', ()=>{
+    const link = document.createElement('a');
+    link.download = 'halftone-duotone.png';
+    link.href = outputCanvas.toDataURL('image/png');
+    link.click();
+  });
+
+  window.addEventListener('resize', ()=>{
+    if(hasImage()) initCropBox();
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pair Lab — Combine Images in Batches</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  :root{
+    --bg:#fbfaf7;
+    --panel:#ffffff;
+    --panel-2:#f4f2ec;
+    --paper:#ffffff;
+    --ink:#221f1a;
+    --muted:#8a8377;
+    --accent:#c1481f;
+    --accent-2:#b8842a;
+    --line:#e7e3d9;
+    --good:#5c8a4d;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .mono{font-family:'JetBrains Mono',monospace;}
+
+  .app{max-width:960px;margin:0 auto;padding:48px 20px 60px;}
+
+  header.hero{
+    padding:0 0 28px;
+    border-bottom:1px solid var(--line);
+    margin-bottom:28px;
+  }
+  header.hero .eyebrow{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    letter-spacing:.12em;
+    color:var(--accent-2);
+    text-transform:uppercase;
+    margin-bottom:10px;
+  }
+  header.hero h1{
+    font-size:34px;
+    margin:0 0 10px;
+    letter-spacing:-0.01em;
+    font-weight:700;
+    color:var(--ink);
+  }
+  header.hero p{
+    color:var(--muted);
+    margin:0;
+    max-width:560px;
+    line-height:1.55;
+    font-size:15px;
+  }
+
+  section{margin-bottom:32px;}
+  .section-title{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    color:var(--muted);
+    margin-bottom:12px;
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .section-title::after{
+    content:"";
+    flex:1;
+    height:1px;
+    background:var(--line);
+  }
+
+  .dropzone{
+    border:1.5px dashed var(--line);
+    border-radius:10px;
+    padding:40px 20px;
+    text-align:center;
+    cursor:pointer;
+    transition:border-color .15s, background .15s;
+    background:var(--panel);
+  }
+  .dropzone:hover, .dropzone.drag{
+    border-color:var(--accent);
+    background:#fbf3ec;
+  }
+  .dropzone .big{
+    font-size:15px;
+    font-weight:600;
+    margin-bottom:4px;
+  }
+  .dropzone .small{
+    font-size:13px;
+    color:var(--muted);
+  }
+  input[type=file]{display:none;}
+
+  .tray-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:10px;
+  }
+  .tray-head .count{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    color:var(--muted);
+  }
+  .tray-actions{display:flex;gap:8px;}
+
+  .frames{
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(110px, 1fr));
+    gap:12px;
+  }
+  .frame{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:8px;
+    overflow:hidden;
+    position:relative;
+    cursor:grab;
+    box-shadow:0 1px 2px rgba(30,25,15,.04);
+  }
+  .frame.dragging{opacity:.4;}
+  .frame .thumb-wrap{
+    aspect-ratio:1/1;
+    background:var(--panel-2);
+    display:flex;align-items:center;justify-content:center;
+    overflow:hidden;
+  }
+  .frame img{width:100%;height:100%;object-fit:cover;display:block;}
+  .frame .badge{
+    position:absolute;top:6px;left:6px;
+    background:#fff;
+    color:var(--accent);
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    font-weight:700;
+    padding:2px 6px;
+    border-radius:4px;
+    line-height:1.4;
+    box-shadow:0 1px 3px rgba(30,25,15,.15);
+  }
+  .frame .rm{
+    position:absolute;top:6px;right:6px;
+    width:20px;height:20px;
+    background:rgba(255,255,255,.9);
+    color:var(--muted);
+    border:none;
+    border-radius:4px;
+    cursor:pointer;
+    font-size:13px;
+    line-height:1;
+    box-shadow:0 1px 3px rgba(30,25,15,.15);
+  }
+  .frame .rm:hover{color:#fff;background:var(--accent);}
+  .frame .order-controls{
+    display:flex;
+    border-top:1px solid var(--line);
+  }
+  .frame .order-controls button{
+    flex:1;
+    background:var(--panel);
+    color:var(--muted);
+    border:none;
+    padding:5px 0;
+    cursor:pointer;
+    font-size:11px;
+  }
+  .frame .order-controls button:hover{color:var(--ink);background:var(--panel-2);}
+  .frame .fname{
+    font-size:10px;
+    color:var(--muted);
+    padding:3px 6px 4px;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    font-family:'JetBrains Mono',monospace;
+  }
+
+  .empty-hint{
+    color:var(--muted);
+    font-size:13px;
+    padding:6px 2px;
+  }
+
+  .controls-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:20px;
+  }
+  @media (max-width:640px){ .controls-grid{grid-template-columns:1fr;} }
+
+  .field label{
+    display:block;
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:var(--muted);
+    margin-bottom:8px;
+  }
+
+  .layout-options{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:8px;
+  }
+  .layout-btn{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:12px 6px 10px;
+    cursor:pointer;
+    color:var(--ink);
+    display:flex;flex-direction:column;align-items:center;gap:8px;
+    transition:border-color .15s, background .15s;
+  }
+  .layout-btn:hover{border-color:var(--accent-2);}
+  .layout-btn.active{
+    border-color:var(--accent);
+    background:#fbf3ec;
+    color:var(--accent);
+  }
+  .layout-btn svg{width:34px;height:34px;}
+  .layout-btn span{font-size:12px;font-weight:500;}
+
+  input[type=text], select{
+    width:100%;
+    background:var(--panel);
+    border:1px solid var(--line);
+    color:var(--ink);
+    padding:10px 12px;
+    border-radius:7px;
+    font-size:14px;
+    font-family:'Inter',sans-serif;
+  }
+  input[type=text]:focus, select:focus{outline:2px solid var(--accent-2); outline-offset:1px;}
+
+  .name-preview{
+    margin-top:8px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    color:var(--accent-2);
+  }
+
+  .btn{
+    font-family:'Inter',sans-serif;
+    font-weight:600;
+    font-size:14px;
+    padding:12px 22px;
+    border-radius:8px;
+    border:none;
+    cursor:pointer;
+    transition:transform .1s, background .15s, border-color .15s;
+  }
+  .btn:active{transform:scale(.98);}
+  .btn-primary{
+    background:var(--accent);
+    color:#fff;
+  }
+  .btn-primary:hover{background:#a53c19;}
+  .btn-primary:disabled{background:#e9c9b8;color:#fff;cursor:not-allowed;}
+  .btn-ghost{
+    background:var(--panel);
+    color:var(--muted);
+    border:1px solid var(--line);
+  }
+  .btn-ghost:hover{color:var(--ink);border-color:var(--muted);}
+
+  .orientation-toggle{
+    display:flex;
+    gap:8px;
+  }
+  .orient-btn{
+    flex:1;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:7px;
+    padding:9px 0;
+    font-size:13px;
+    font-weight:500;
+    color:var(--ink);
+    cursor:pointer;
+    transition:border-color .15s, background .15s, color .15s;
+  }
+  .orient-btn:hover{border-color:var(--accent-2);}
+  .orient-btn.active{
+    border-color:var(--accent);
+    background:#fbf3ec;
+    color:var(--accent);
+  }
+
+  .custom-size-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .custom-size-row input{width:auto;flex:1;}
+  .custom-size-row span{color:var(--muted);}
+
+  input[type=range]{
+    width:100%;
+    accent-color:var(--accent);
+    cursor:pointer;
+  }
+
+  .preview-box{
+    background:var(--panel-2);
+    border:1px solid var(--line);
+    border-radius:10px;
+    min-height:160px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+  }
+  .preview-empty{
+    color:var(--muted);
+    font-size:13px;
+  }
+  .preview-box img{
+    max-width:100%;
+    max-height:360px;
+    object-fit:contain;
+    box-shadow:0 2px 10px rgba(30,25,15,.12);
+    background:#fff;
+  }
+  .preview-caption{
+    margin-top:8px;
+    font-size:12px;
+    color:var(--muted);
+  }
+
+  .combine-row{
+    display:flex;align-items:center;gap:14px;margin-top:22px;flex-wrap:wrap;
+  }
+  .combine-row .status{
+    font-size:13px;color:var(--muted);
+  }
+
+  .results-head{
+    display:flex;align-items:center;justify-content:space-between;
+    margin-bottom:14px;
+    flex-wrap:wrap;gap:10px;
+  }
+
+  .results-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(180px,1fr));
+    gap:14px;
+  }
+  .result-card{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:9px;
+    overflow:hidden;
+    box-shadow:0 1px 2px rgba(30,25,15,.04);
+  }
+  .result-card .preview{
+    background:var(--panel-2);
+    display:flex;align-items:center;justify-content:center;
+    min-height:110px;
+    max-height:170px;
+    overflow:hidden;
+  }
+  .result-card .preview img{width:100%;height:100%;object-fit:contain;}
+  .result-card .meta{padding:10px;}
+  .result-card .fname{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    color:var(--ink);
+    margin-bottom:8px;
+    word-break:break-all;
+  }
+  .result-card a.dl{
+    display:block;
+    text-align:center;
+    background:var(--panel-2);
+    color:var(--accent);
+    border:1px solid var(--line);
+    border-radius:6px;
+    padding:7px 0;
+    font-size:12px;
+    font-weight:600;
+    text-decoration:none;
+  }
+  .result-card a.dl:hover{border-color:var(--accent);}
+
+  footer.note{
+    color:var(--muted);
+    font-size:12px;
+    margin-top:40px;
+    line-height:1.6;
+    border-top:1px solid var(--line);
+    padding-top:16px;
+  }
+</style>
+</head>
+<body>
+
+
+<div class="app">
+  <header class="hero">
+    <div class="eyebrow mono">Contact Sheet Tool</div>
+    <h1>Pair Lab</h1>
+    <p>Upload a batch of images, choose how they should be grouped, and Pair Lab combines them in order — two or four at a time — ready to download.</p>
+  </header>
+
+  <section id="uploadSection">
+    <div class="section-title">01 — Upload images</div>
+    <div class="dropzone" id="dropzone">
+      <div class="big">Drop images here, or click to browse</div>
+      <div class="small">JPEG, PNG, WEBP · any number of files · order can be adjusted below</div>
+      <input type="file" id="fileInput" multiple accept="image/*">
+    </div>
+  </section>
+
+  <section id="traySection" style="display:none;">
+    <div class="section-title">02 — Order &amp; check your images</div>
+    <div class="tray-head">
+      <div class="count mono" id="frameCount">0 images</div>
+      <div class="tray-actions">
+        <button class="btn btn-ghost" id="sortBtn">Sort by filename</button>
+        <button class="btn btn-ghost" id="clearBtn">Clear all</button>
+      </div>
+    </div>
+    <div class="frames" id="frames"></div>
+  </section>
+
+  <section id="controlsSection" style="display:none;">
+    <div class="section-title">03 — Set the layout &amp; output</div>
+    <div class="controls-grid">
+      <div class="field">
+        <label>Layout</label>
+        <div class="layout-options">
+          <button class="layout-btn active" data-layout="horizontal">
+            <svg viewBox="0 0 40 40"><rect x="3" y="10" width="15" height="20" rx="1.5" fill="none" stroke="currentColor" stroke-width="2"/><rect x="22" y="10" width="15" height="20" rx="1.5" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+            <span>Horizontal</span>
+          </button>
+          <button class="layout-btn" data-layout="vertical">
+            <svg viewBox="0 0 40 40"><rect x="10" y="3" width="20" height="15" rx="1.5" fill="none" stroke="currentColor" stroke-width="2"/><rect x="10" y="22" width="20" height="15" rx="1.5" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+            <span>Vertical</span>
+          </button>
+          <button class="layout-btn" data-layout="grid4">
+            <svg viewBox="0 0 40 40"><rect x="3" y="3" width="15" height="15" rx="1.5" fill="none" stroke="currentColor" stroke-width="2"/><rect x="22" y="3" width="15" height="15" rx="1.5" fill="none" stroke="currentColor" stroke-width="2"/><rect x="3" y="22" width="15" height="15" rx="1.5" fill="none" stroke="currentColor" stroke-width="2"/><rect x="22" y="22" width="15" height="15" rx="1.5" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+            <span>4-Square</span>
+          </button>
+        </div>
+
+        <div class="field" style="margin-top:18px;">
+          <label>Output size</label>
+          <select id="sizeSelect">
+            <option value="auto" selected>Auto (fit to images)</option>
+            <optgroup label="ISO">
+              <option value="a3">A3</option>
+              <option value="a4">A4</option>
+              <option value="a5">A5</option>
+              <option value="a6">A6</option>
+              <option value="b4">B4</option>
+              <option value="b5">B5</option>
+              <option value="b6">B6</option>
+            </optgroup>
+            <optgroup label="US">
+              <option value="letter">Letter</option>
+              <option value="legal">Legal</option>
+              <option value="tabloid">Tabloid</option>
+            </optgroup>
+            <optgroup label="Photo &amp; social">
+              <option value="photo46">Photo 4×6 in</option>
+              <option value="photo57">Photo 5×7 in</option>
+              <option value="square">Square (1080×1080 px)</option>
+            </optgroup>
+            <option value="custom">Custom…</option>
+          </select>
+        </div>
+
+        <div class="field" id="orientationField" style="margin-top:14px; display:none;">
+          <label>Orientation</label>
+          <div class="orientation-toggle">
+            <button type="button" class="orient-btn active" data-orient="portrait">Portrait</button>
+            <button type="button" class="orient-btn" data-orient="landscape">Landscape</button>
+          </div>
+        </div>
+
+        <div class="field" id="customSizeField" style="margin-top:14px; display:none;">
+          <label>Custom size (mm)</label>
+          <div class="custom-size-row">
+            <input type="number" id="customW" value="210" min="10" max="2000">
+            <span class="mono">×</span>
+            <input type="number" id="customH" value="297" min="10" max="2000">
+          </div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Base file name</label>
+        <input type="text" id="baseName" value="combined" maxlength="60">
+        <div class="field" style="margin-top:14px;">
+          <label>Output format</label>
+          <select id="formatSelect">
+            <option value="png">PNG (.png)</option>
+            <option value="jpeg" selected>JPEG (.jpg)</option>
+            <option value="pdf">PDF (.pdf)</option>
+          </select>
+        </div>
+        <div class="field" style="margin-top:14px;">
+          <label>Padding <span class="mono" id="paddingValue">24px</span></label>
+          <input type="range" id="paddingSlider" min="0" max="150" step="2" value="24">
+        </div>
+        <div class="name-preview mono" id="namePreview">e.g. combined 1-2.jpg</div>
+      </div>
+    </div>
+
+    <div class="section-title" style="margin-top:26px;">04 — Preview</div>
+    <div class="preview-box" id="previewBox">
+      <div class="preview-empty" id="previewEmpty">Preview will appear here</div>
+      <img id="previewImg" alt="Preview of first group" style="display:none;">
+    </div>
+    <div class="preview-caption mono" id="previewCaption"></div>
+
+    <div class="combine-row">
+      <button class="btn btn-primary" id="combineBtn">Combine images</button>
+      <span class="status" id="combineStatus"></span>
+    </div>
+  </section>
+
+  <section id="resultsSection" style="display:none;">
+    <div class="section-title">05 — Download</div>
+    <div class="results-head">
+      <div class="count mono" id="resultCount">0 files</div>
+      <button class="btn btn-primary" id="downloadAllBtn">Download all (.zip)</button>
+    </div>
+    <div class="results-grid" id="resultsGrid"></div>
+  </section>
+
+  <footer class="note">
+    Everything runs locally in your browser — images are never uploaded anywhere. 4-Square groups images four at a time in reading order (top-left → top-right → bottom-left → bottom-right); Horizontal and Vertical group two at a time. If the count doesn't divide evenly, the leftover images are combined as their own smaller group.
+  </footer>
+</div>
+
+<script>
+(function(){
+  const dropzone = document.getElementById('dropzone');
+  const fileInput = document.getElementById('fileInput');
+  const traySection = document.getElementById('traySection');
+  const controlsSection = document.getElementById('controlsSection');
+  const resultsSection = document.getElementById('resultsSection');
+  const framesEl = document.getElementById('frames');
+  const frameCount = document.getElementById('frameCount');
+  const sortBtn = document.getElementById('sortBtn');
+  const clearBtn = document.getElementById('clearBtn');
+  const baseNameInput = document.getElementById('baseName');
+  const formatSelect = document.getElementById('formatSelect');
+  const namePreview = document.getElementById('namePreview');
+  const combineBtn = document.getElementById('combineBtn');
+  const combineStatus = document.getElementById('combineStatus');
+  const resultsGrid = document.getElementById('resultsGrid');
+  const resultCount = document.getElementById('resultCount');
+  const downloadAllBtn = document.getElementById('downloadAllBtn');
+  const sizeSelect = document.getElementById('sizeSelect');
+  const orientationField = document.getElementById('orientationField');
+  const customSizeField = document.getElementById('customSizeField');
+  const customW = document.getElementById('customW');
+  const customH = document.getElementById('customH');
+  const paddingSlider = document.getElementById('paddingSlider');
+  const paddingValue = document.getElementById('paddingValue');
+  const previewBox = document.getElementById('previewBox');
+  const previewEmpty = document.getElementById('previewEmpty');
+  const previewImg = document.getElementById('previewImg');
+  const previewCaption = document.getElementById('previewCaption');
+
+  let orientation = 'portrait';
+  let PADDING = 24;
+
+  const PAPER_SIZES_MM = {
+    a3: [297,420], a4: [210,297], a5: [148,210], a6: [105,148],
+    b4: [250,353], b5: [176,250], b6: [125,176],
+    letter: [215.9,279.4], legal: [215.9,355.6], tabloid: [279,432],
+    photo46: [101.6,152.4], photo57: [127,177.8]
+  };
+  const PAGE_DPI = 150;
+
+  let items = [];       // {id, file, url, img}
+  let layout = 'horizontal';
+  let results = [];     // {blob, filename}
+  let idSeq = 0;
+
+  function extFor(fmt){ return fmt === 'jpeg' ? 'jpg' : fmt; }
+
+  function updateNamePreview(){
+    const base = (baseNameInput.value || 'combined').trim() || 'combined';
+    const ext = extFor(formatSelect.value);
+    const sample = layout === 'grid4' ? '1-2-3-4' : '1-2';
+    namePreview.textContent = `e.g. ${base} ${sample}.${ext}`;
+  }
+
+  // ---------- upload ----------
+  dropzone.addEventListener('click', () => fileInput.click());
+  ['dragenter','dragover'].forEach(evt=>{
+    dropzone.addEventListener(evt, e=>{ e.preventDefault(); dropzone.classList.add('drag'); });
+  });
+  ['dragleave','drop'].forEach(evt=>{
+    dropzone.addEventListener(evt, e=>{ e.preventDefault(); dropzone.classList.remove('drag'); });
+  });
+  dropzone.addEventListener('drop', e=>{
+    handleFiles(e.dataTransfer.files);
+  });
+  fileInput.addEventListener('change', e=>{
+    handleFiles(e.target.files);
+    fileInput.value = '';
+  });
+
+  function loadImage(url){
+    return new Promise((resolve,reject)=>{
+      const img = new Image();
+      img.onload = ()=>resolve(img);
+      img.onerror = reject;
+      img.src = url;
+    });
+  }
+
+  async function handleFiles(fileList){
+    const files = Array.from(fileList).filter(f=>f.type.startsWith('image/'));
+    if(!files.length) return;
+    for(const file of files){
+      const url = URL.createObjectURL(file);
+      try{
+        const img = await loadImage(url);
+        items.push({id: idSeq++, file, url, img});
+      }catch(e){ /* skip unreadable file */ }
+    }
+    renderFrames();
+  }
+
+  // ---------- tray ----------
+  function renderFrames(){
+    framesEl.innerHTML = '';
+    items.forEach((item, idx)=>{
+      const frame = document.createElement('div');
+      frame.className = 'frame';
+      frame.draggable = true;
+      frame.dataset.id = item.id;
+
+      frame.innerHTML = `
+        <div class="thumb-wrap"><img src="${item.url}" alt="${item.file.name}"></div>
+        <span class="badge mono">${idx+1}</span>
+        <button class="rm" title="Remove">×</button>
+        <div class="fname">${item.file.name}</div>
+        <div class="order-controls">
+          <button class="mv-left" title="Move earlier">◀</button>
+          <button class="mv-right" title="Move later">▶</button>
+        </div>
+      `;
+
+      frame.querySelector('.rm').addEventListener('click', ()=>{
+        items = items.filter(i=>i.id !== item.id);
+        renderFrames();
+      });
+      frame.querySelector('.mv-left').addEventListener('click', ()=>{
+        if(idx>0){ [items[idx-1],items[idx]] = [items[idx],items[idx-1]]; renderFrames(); }
+      });
+      frame.querySelector('.mv-right').addEventListener('click', ()=>{
+        if(idx<items.length-1){ [items[idx+1],items[idx]] = [items[idx],items[idx+1]]; renderFrames(); }
+      });
+
+      frame.addEventListener('dragstart', e=>{
+        frame.classList.add('dragging');
+        e.dataTransfer.setData('text/plain', String(idx));
+      });
+      frame.addEventListener('dragend', ()=> frame.classList.remove('dragging'));
+      frame.addEventListener('dragover', e=> e.preventDefault());
+      frame.addEventListener('drop', e=>{
+        e.preventDefault();
+        const from = parseInt(e.dataTransfer.getData('text/plain'), 10);
+        const to = idx;
+        if(from === to || isNaN(from)) return;
+        const moved = items.splice(from,1)[0];
+        items.splice(to,0,moved);
+        renderFrames();
+      });
+
+      framesEl.appendChild(frame);
+    });
+
+    frameCount.textContent = items.length + (items.length === 1 ? ' image' : ' images');
+
+    const hasItems = items.length > 0;
+    traySection.style.display = hasItems ? 'block' : 'none';
+    controlsSection.style.display = hasItems ? 'block' : 'none';
+    if(!hasItems){
+      resultsSection.style.display = 'none';
+      resultsGrid.innerHTML = '';
+      results = [];
+    }
+    updatePreview();
+  }
+
+  sortBtn.addEventListener('click', ()=>{
+    items.sort((a,b)=> a.file.name.localeCompare(b.file.name, undefined, {numeric:true, sensitivity:'base'}));
+    renderFrames();
+  });
+  clearBtn.addEventListener('click', ()=>{
+    items = [];
+    renderFrames();
+  });
+
+  // ---------- controls ----------
+  document.querySelectorAll('.layout-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('.layout-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      layout = btn.dataset.layout;
+      updateNamePreview();
+      updatePreview();
+    });
+  });
+  baseNameInput.addEventListener('input', updateNamePreview);
+  formatSelect.addEventListener('change', updateNamePreview);
+  updateNamePreview();
+
+  sizeSelect.addEventListener('change', ()=>{
+    const key = sizeSelect.value;
+    orientationField.style.display = (key === 'auto' || key === 'square') ? 'none' : 'block';
+    customSizeField.style.display = (key === 'custom') ? 'block' : 'none';
+    updatePreview();
+  });
+
+  document.querySelectorAll('.orient-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('.orient-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      orientation = btn.dataset.orient;
+      updatePreview();
+    });
+  });
+
+  [customW, customH].forEach(el=> el.addEventListener('input', updatePreview));
+
+  paddingSlider.addEventListener('input', ()=>{
+    PADDING = parseInt(paddingSlider.value, 10);
+    paddingValue.textContent = PADDING + 'px';
+    updatePreview();
+  });
+
+  // ---------- combine logic ----------
+  function groupSize(){ return layout === 'grid4' ? 4 : 2; }
+
+  function buildGroups(){
+    const size = groupSize();
+    const groups = [];
+    for(let i=0; i<items.length; i+=size){
+      groups.push(items.slice(i, i+size));
+    }
+    return groups;
+  }
+
+  function drawContain(ctx, img, x, y, w, h){
+    const scale = Math.min(w / img.naturalWidth, h / img.naturalHeight);
+    const dw = img.naturalWidth * scale, dh = img.naturalHeight * scale;
+    const dx = x + (w - dw) / 2, dy = y + (h - dh) / 2;
+    ctx.drawImage(img, dx, dy, dw, dh);
+  }
+
+  function getPageSizePx(){
+    const key = sizeSelect.value;
+    if(key === 'auto') return null;
+    if(key === 'square') return { w: 1080, h: 1080 };
+    let wmm, hmm;
+    if(key === 'custom'){
+      wmm = parseFloat(customW.value) || 210;
+      hmm = parseFloat(customH.value) || 297;
+    } else {
+      [wmm, hmm] = PAPER_SIZES_MM[key];
+    }
+    if(orientation === 'landscape' && wmm < hmm) [wmm, hmm] = [hmm, wmm];
+    if(orientation === 'portrait' && wmm > hmm) [wmm, hmm] = [hmm, wmm];
+    return { w: Math.round(wmm / 25.4 * PAGE_DPI), h: Math.round(hmm / 25.4 * PAGE_DPI) };
+  }
+
+  function buildContentCanvas(group){
+    const imgs = group.map(g=>g.img);
+
+    if(layout === 'horizontal'){
+      const h = Math.min(...imgs.map(i=>i.naturalHeight));
+      const widths = imgs.map(i=> i.naturalWidth * (h / i.naturalHeight));
+      const totalW = widths.reduce((a,b)=>a+b,0) + PADDING*(imgs.length-1);
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.round(totalW));
+      canvas.height = Math.max(1, Math.round(h));
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0,0,canvas.width,canvas.height);
+      let x = 0;
+      imgs.forEach((img,i)=>{
+        ctx.drawImage(img, x, 0, widths[i], h);
+        x += widths[i] + PADDING;
+      });
+      return canvas;
+    }
+
+    if(layout === 'vertical'){
+      const w = Math.min(...imgs.map(i=>i.naturalWidth));
+      const heights = imgs.map(i=> i.naturalHeight * (w / i.naturalWidth));
+      const totalH = heights.reduce((a,b)=>a+b,0) + PADDING*(imgs.length-1);
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.round(w));
+      canvas.height = Math.max(1, Math.round(totalH));
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0,0,canvas.width,canvas.height);
+      let y = 0;
+      imgs.forEach((img,i)=>{
+        ctx.drawImage(img, 0, y, w, heights[i]);
+        y += heights[i] + PADDING;
+      });
+      return canvas;
+    }
+
+    // grid4 — auto-aligned 2x2, uses however many images are in the group (1-4)
+    const cellW = Math.min(...imgs.map(i=>i.naturalWidth));
+    const cellH = Math.min(...imgs.map(i=>i.naturalHeight));
+    const cols = imgs.length > 1 ? 2 : 1;
+    const rows = Math.ceil(imgs.length / 2);
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, cellW*cols + PADDING*(cols-1));
+    canvas.height = Math.max(1, cellH*rows + PADDING*(rows-1));
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+    imgs.forEach((img,i)=>{
+      const col = i % cols, row = Math.floor(i / cols);
+      const px = col * (cellW + PADDING), py = row * (cellH + PADDING);
+      drawContain(ctx, img, px, py, cellW, cellH);
+    });
+    return canvas;
+  }
+
+  function canvasForGroup(group){
+    const content = buildContentCanvas(group);
+    const page = getPageSizePx();
+    if(!page) return content;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = page.w;
+    canvas.height = page.h;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+
+    const margin = PADDING;
+    const availW = Math.max(1, page.w - margin*2);
+    const availH = Math.max(1, page.h - margin*2);
+    const scale = Math.min(availW / content.width, availH / content.height);
+    const drawW = content.width * scale, drawH = content.height * scale;
+    const dx = (page.w - drawW) / 2, dy = (page.h - drawH) / 2;
+    ctx.drawImage(content, dx, dy, drawW, drawH);
+    return canvas;
+  }
+
+  function updatePreview(){
+    if(!items.length){
+      previewImg.style.display = 'none';
+      previewEmpty.style.display = 'block';
+      previewCaption.textContent = '';
+      return;
+    }
+    const size = groupSize();
+    const group = items.slice(0, size);
+    let canvas;
+    try{
+      canvas = canvasForGroup(group);
+    }catch(e){
+      previewImg.style.display = 'none';
+      previewEmpty.style.display = 'block';
+      previewEmpty.textContent = 'Preview unavailable for this combination';
+      return;
+    }
+    previewImg.src = canvas.toDataURL('image/png');
+    previewImg.style.display = 'block';
+    previewEmpty.style.display = 'none';
+
+    const indices = group.map((_,k)=> k+1).join('-');
+    const pageLabel = sizeSelect.value === 'auto' ? 'auto-sized' : `${canvas.width}×${canvas.height}px`;
+    const leftoverNote = group.length < size ? ' (partial group)' : '';
+    previewCaption.textContent = `Group ${indices}${leftoverNote} — ${pageLabel}, ${PADDING}px padding`;
+  }
+
+  function canvasToBlob(canvas, fmt){
+    return new Promise(resolve=>{
+      if(fmt === 'png'){
+        canvas.toBlob(resolve, 'image/png');
+      } else if(fmt === 'jpeg'){
+        canvas.toBlob(resolve, 'image/jpeg', 0.92);
+      } else if(fmt === 'pdf'){
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF({
+          orientation: canvas.width >= canvas.height ? 'landscape' : 'portrait',
+          unit: 'px',
+          format: [canvas.width, canvas.height]
+        });
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
+        pdf.addImage(dataUrl, 'JPEG', 0, 0, canvas.width, canvas.height);
+        resolve(pdf.output('blob'));
+      }
+    });
+  }
+
+  combineBtn.addEventListener('click', async ()=>{
+    if(!items.length) return;
+    combineBtn.disabled = true;
+    combineStatus.textContent = 'Combining…';
+    resultsGrid.innerHTML = '';
+    results = [];
+
+    const base = (baseNameInput.value || 'combined').trim() || 'combined';
+    const fmt = formatSelect.value;
+    const ext = extFor(fmt);
+    const groups = buildGroups();
+    let indexCursor = 1;
+
+    for(const group of groups){
+      const startIdx = indexCursor;
+      const indices = group.map((_,k)=> startIdx + k);
+      indexCursor += group.length;
+
+      let canvas;
+      try{
+        canvas = canvasForGroup(group);
+      }catch(e){ continue; }
+
+      const blob = await canvasToBlob(canvas, fmt);
+      const label = indices.join('-');
+      const filename = `${base} ${label}.${ext}`;
+      results.push({ blob, filename, previewUrl: (fmt === 'pdf' ? canvas.toDataURL('image/png') : URL.createObjectURL(blob)) });
+    }
+
+    renderResults();
+    combineBtn.disabled = false;
+    combineStatus.textContent = `Done — ${results.length} file${results.length===1?'':'s'} ready.`;
+  });
+
+  function renderResults(){
+    resultsGrid.innerHTML = '';
+    results.forEach(r=>{
+      const card = document.createElement('div');
+      card.className = 'result-card';
+      card.innerHTML = `
+        <div class="preview"><img src="${r.previewUrl}" alt="${r.filename}"></div>
+        <div class="meta">
+          <div class="fname">${r.filename}</div>
+          <a class="dl" download="${r.filename}">Download</a>
+        </div>
+      `;
+      const a = card.querySelector('a.dl');
+      a.href = URL.createObjectURL(r.blob);
+      resultsGrid.appendChild(card);
+    });
+    resultCount.textContent = results.length + (results.length===1 ? ' file' : ' files');
+    resultsSection.style.display = results.length ? 'block' : 'none';
+  }
+
+  downloadAllBtn.addEventListener('click', async ()=>{
+    if(!results.length) return;
+    downloadAllBtn.disabled = true;
+    const originalText = downloadAllBtn.textContent;
+    downloadAllBtn.textContent = 'Zipping…';
+    const zip = new JSZip();
+    results.forEach(r=> zip.file(r.filename, r.blob));
+    const zipBlob = await zip.generateAsync({type:'blob'});
+    const base = (baseNameInput.value || 'combined').trim() || 'combined';
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(zipBlob);
+    a.download = `${base}.zip`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    downloadAllBtn.disabled = false;
+    downloadAllBtn.textContent = originalText;
+  });
+
+})();
+</script>
+
+
+</body>
+</html>

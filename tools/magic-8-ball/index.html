@@ -134,7 +134,17 @@
       // A cached 404 can hide an existing file. Recover its SHA and retry once.
       if(upload.status===422&&!payload.sha){
         const retryMeta=await fetch(`${url}?refresh=${Date.now()}`,{headers:githubHeaders(),cache:'no-store'});
-        if(retryMeta.ok){const fresh=await retryMeta.json();payload.sha=fresh.sha;upload=await fetch(url,{method:'PUT',headers:{...githubHeaders(),'Content-Type':'application/json'},body:JSON.stringify(payload)})}
+        if(retryMeta.ok){const fresh=await retryMeta.json();payload.sha=fresh.sha}
+        // If Contents metadata is unavailable, locate the blob through the Git tree.
+        if(!payload.sha){
+          const repoInfo=await fetch(`https://api.github.com/repos/${githubFile.owner}/${githubFile.repo}`,{headers:githubHeaders(),cache:'no-store'});
+          if(repoInfo.ok){
+            const repo=await repoInfo.json();
+            const treeRes=await fetch(`https://api.github.com/repos/${githubFile.owner}/${githubFile.repo}/git/trees/${encodeURIComponent(repo.default_branch)}?recursive=1`,{headers:githubHeaders(),cache:'no-store'});
+            if(treeRes.ok){const tree=await treeRes.json();const blob=tree.tree.find(item=>item.type==='blob'&&item.path===githubFile.path);if(blob)payload.sha=blob.sha}
+          }
+        }
+        if(payload.sha)upload=await fetch(url,{method:'PUT',headers:{...githubHeaders(),'Content-Type':'application/json'},body:JSON.stringify(payload)});
       }
       if(!upload.ok){const detail=await upload.json().catch(()=>({}));if(upload.status===404)throw new Error('Repository/path not found, or this token has no access to sseoyi/tools.');throw new Error(detail.message||`Could not update data.json (${upload.status}).`)}
       syncStatus.className='sync-status ok';syncStatus.textContent='Saved to data.json.';

@@ -126,10 +126,12 @@
       syncStatus.className='sync-status';syncStatus.textContent='Saving to data.json…';
       const url=`https://api.github.com/repos/${githubFile.owner}/${githubFile.repo}/contents/${githubFile.path}`;
       const current=await fetch(url,{headers:githubHeaders()});
-      if(!current.ok)throw new Error(current.status===401?'Token rejected.':`Could not read data.json (${current.status}).`);
-      const metadata=await current.json();
-      const upload=await fetch(url,{method:'PUT',headers:{...githubHeaders(),'Content-Type':'application/json'},body:JSON.stringify({message:'Update magic 8 ball fortunes',content:utf8ToBase64(JSON.stringify(fortunes,null,2)+'\n'),sha:metadata.sha})});
-      if(!upload.ok){const detail=await upload.json().catch(()=>({}));throw new Error(detail.message||`Could not update data.json (${upload.status}).`)}
+      if(!current.ok&&current.status!==404)throw new Error(current.status===401?'Token rejected.':`Could not read data.json (${current.status}).`);
+      const metadata=current.ok?await current.json():null;
+      const payload={message:metadata?'Update magic 8 ball fortunes':'Create magic 8 ball data.json',content:utf8ToBase64(JSON.stringify(fortunes,null,2)+'\n')};
+      if(metadata)payload.sha=metadata.sha;
+      const upload=await fetch(url,{method:'PUT',headers:{...githubHeaders(),'Content-Type':'application/json'},body:JSON.stringify(payload)});
+      if(!upload.ok){const detail=await upload.json().catch(()=>({}));if(upload.status===404)throw new Error('Repository/path not found, or this token has no access to sseoyi/tools.');throw new Error(detail.message||`Could not update data.json (${upload.status}).`)}
       syncStatus.className='sync-status ok';syncStatus.textContent='Saved to data.json.';
     }
     function queueGithubSave(){if(!githubToken)return;saveQueue=saveQueue.catch(()=>{}).then(syncToGithub).catch(err=>{syncStatus.className='sync-status error';syncStatus.textContent=err.message})}

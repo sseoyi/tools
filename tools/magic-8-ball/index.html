@@ -125,12 +125,17 @@
       if(!githubToken)return;
       syncStatus.className='sync-status';syncStatus.textContent='Saving to data.json…';
       const url=`https://api.github.com/repos/${githubFile.owner}/${githubFile.repo}/contents/${githubFile.path}`;
-      const current=await fetch(url,{headers:githubHeaders()});
+      const current=await fetch(`${url}?cache=${Date.now()}`,{headers:githubHeaders(),cache:'no-store'});
       if(!current.ok&&current.status!==404)throw new Error(current.status===401?'Token rejected.':`Could not read data.json (${current.status}).`);
       const metadata=current.ok?await current.json():null;
       const payload={message:metadata?'Update magic 8 ball fortunes':'Create magic 8 ball data.json',content:utf8ToBase64(JSON.stringify(fortunes,null,2)+'\n')};
       if(metadata)payload.sha=metadata.sha;
-      const upload=await fetch(url,{method:'PUT',headers:{...githubHeaders(),'Content-Type':'application/json'},body:JSON.stringify(payload)});
+      let upload=await fetch(url,{method:'PUT',headers:{...githubHeaders(),'Content-Type':'application/json'},body:JSON.stringify(payload)});
+      // A cached 404 can hide an existing file. Recover its SHA and retry once.
+      if(upload.status===422&&!payload.sha){
+        const retryMeta=await fetch(`${url}?refresh=${Date.now()}`,{headers:githubHeaders(),cache:'no-store'});
+        if(retryMeta.ok){const fresh=await retryMeta.json();payload.sha=fresh.sha;upload=await fetch(url,{method:'PUT',headers:{...githubHeaders(),'Content-Type':'application/json'},body:JSON.stringify(payload)})}
+      }
       if(!upload.ok){const detail=await upload.json().catch(()=>({}));if(upload.status===404)throw new Error('Repository/path not found, or this token has no access to sseoyi/tools.');throw new Error(detail.message||`Could not update data.json (${upload.status}).`)}
       syncStatus.className='sync-status ok';syncStatus.textContent='Saved to data.json.';
     }

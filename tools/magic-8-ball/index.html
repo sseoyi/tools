@@ -31,6 +31,10 @@
     .dust-shuffle{animation:dustShuffle 1s ease-in-out both}.gradient-shift{animation:gradientShift 1.5s ease-in-out}.text-out{animation:textOut .55s ease forwards}.text-in{animation:textIn 1.45s var(--ease) both}
     .mode-fade{animation:modeFade .9s ease}.selector{display:flex;align-items:center;justify-content:center;gap:5px;margin-top:clamp(46px,8vh,76px);z-index:5;font:600 clamp(8px,1.5vw,10px)/1 system-ui,sans-serif;letter-spacing:.13em;color:rgba(223,211,241,.5)}
     .mode{appearance:none;border:0;background:transparent;color:inherit;font:inherit;letter-spacing:inherit;padding:8px 10px;border-radius:999px;cursor:pointer;transition:color .45s ease,background .45s ease,box-shadow .45s ease}.mode:hover{color:rgba(245,238,255,.86)}.mode.active{color:#f5efff;background:rgba(184,144,255,.11);box-shadow:inset 0 0 0 1px rgba(220,198,255,.19),0 0 18px rgba(148,89,255,.17)}.divider{opacity:.28}
+    .admin-open{position:fixed;right:18px;bottom:16px;border:0;background:transparent;color:rgba(224,211,242,.3);font:600 9px/1 system-ui,sans-serif;letter-spacing:.18em;padding:10px;cursor:pointer;transition:color .3s}.admin-open:hover{color:rgba(244,237,255,.75)}
+    .admin-overlay{position:fixed;inset:0;z-index:20;display:grid;place-items:center;padding:20px;background:rgba(3,2,9,.72);backdrop-filter:blur(12px);opacity:0;visibility:hidden;transition:opacity .35s ease,visibility .35s}.admin-overlay.open{opacity:1;visibility:visible}
+    .admin-panel{width:min(92vw,620px);max-height:min(84vh,720px);overflow:auto;border:1px solid rgba(219,198,255,.16);border-radius:22px;padding:24px;background:linear-gradient(145deg,rgba(25,17,39,.96),rgba(8,7,18,.97));box-shadow:0 25px 90px #000,0 0 45px rgba(129,77,206,.12);font-family:system-ui,sans-serif;color:#eee8f8}
+    .admin-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}.admin-title{margin:0;font:400 25px/1 "Instrument Serif",serif}.admin-close{border:0;background:transparent;color:#b9adc7;font-size:24px;cursor:pointer}.admin-login{display:grid;gap:12px;max-width:330px;margin:15px auto 8px;text-align:center}.admin-input,.fortune-input{width:100%;border:1px solid rgba(218,196,255,.16);border-radius:12px;background:rgba(255,255,255,.055);color:#f5f0fa;padding:12px 14px;font:14px/1.4 system-ui,sans-serif;outline:none}.admin-input:focus,.fortune-input:focus{border-color:rgba(192,156,255,.5);box-shadow:0 0 0 3px rgba(157,102,255,.08)}.admin-action{border:1px solid rgba(213,188,255,.2);border-radius:12px;background:rgba(174,125,255,.12);color:#f2eaff;padding:11px 14px;font:600 11px/1 system-ui,sans-serif;letter-spacing:.1em;cursor:pointer}.admin-error{min-height:16px;color:#dca4bd;font-size:12px}.admin-editor[hidden],.admin-login[hidden]{display:none}.admin-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}.admin-tab{border:0;border-radius:999px;background:transparent;color:#91879f;padding:8px 11px;font:600 9px/1 system-ui,sans-serif;letter-spacing:.08em;cursor:pointer}.admin-tab.active{color:#fff;background:rgba(185,139,255,.15)}.add-row{display:flex;gap:8px;margin-bottom:15px}.fortune-input{resize:vertical;min-height:44px}.fortune-list{display:grid;gap:8px}.fortune-row{display:grid;grid-template-columns:1fr auto auto;gap:7px;align-items:center;padding:10px;border-radius:12px;background:rgba(255,255,255,.035)}.fortune-copy{font:16px/1.3 "Instrument Serif",serif;color:#e8ddf2}.mini-btn{border:0;border-radius:8px;background:rgba(255,255,255,.06);color:#bfb3cc;padding:7px 9px;cursor:pointer}.mini-btn.delete:hover{color:#f1a4bb;background:rgba(188,65,101,.13)}.github-sync{display:grid;grid-template-columns:1fr auto;gap:8px;margin-bottom:18px;padding:13px;border:1px solid rgba(210,187,247,.1);border-radius:14px;background:rgba(0,0,0,.12)}.sync-note{grid-column:1/-1;margin:0;color:#81778d;font-size:11px;line-height:1.45}.sync-status{grid-column:1/-1;min-height:15px;color:#a99ab8;font-size:11px}.sync-status.ok{color:#9fcbb5}.sync-status.error{color:#e5a2b6}
     /* No spatial movement during a change: dust swaps and color softly breathes. */
     @keyframes dustShuffle{0%,100%{opacity:1;filter:blur(0)}48%{opacity:.08;filter:blur(2px)}52%{opacity:.08;filter:blur(2px)}}
     @keyframes gradientShift{0%,100%{filter:blur(18px) hue-rotate(0deg) brightness(1)}50%{filter:blur(19px) hue-rotate(7deg) brightness(1.09)}}
@@ -57,13 +61,34 @@
       <button class="mode" data-mode="encourage">ENCOURAGE</button>
     </nav>
   </main>
+  <button class="admin-open" id="adminOpen">ADMIN</button>
+  <div class="admin-overlay" id="adminOverlay" aria-hidden="true">
+    <section class="admin-panel" role="dialog" aria-modal="true" aria-labelledby="adminTitle">
+      <header class="admin-head"><h2 class="admin-title" id="adminTitle">Fortune archive</h2><button class="admin-close" id="adminClose" aria-label="Close">×</button></header>
+      <div class="admin-login" id="adminLogin">
+        <input class="admin-input" id="adminPassword" type="password" inputmode="numeric" placeholder="Enter password" aria-label="Admin password">
+        <button class="admin-action" id="adminUnlock">UNLOCK</button><div class="admin-error" id="adminError"></div>
+      </div>
+      <div class="admin-editor" id="adminEditor" hidden>
+        <div class="github-sync"><input class="admin-input" id="githubToken" type="password" autocomplete="off" placeholder="GitHub fine-grained token"><button class="admin-action" id="connectGithub">CONNECT</button><p class="sync-note">Requires Contents: Read and write access to sseoyi/tools. Kept only for this browser tab.</p><div class="sync-status" id="syncStatus">Not connected — changes save only in this browser.</div></div>
+        <div class="admin-tabs"><button class="admin-tab active" data-admin-mode="fact">FACT</button><button class="admin-tab" data-admin-mode="rather">WOULD YOU RATHER</button><button class="admin-tab" data-admin-mode="encourage">ENCOURAGE</button></div>
+        <div class="add-row"><textarea class="fortune-input" id="newFortune" rows="1" placeholder="Write a new fortune…"></textarea><button class="admin-action" id="addFortune">ADD</button></div>
+        <div class="fortune-list" id="fortuneList"></div>
+      </div>
+    </section>
+  </div>
   <script>
     // Compact offline fortune library; every choice is made locally.
-    const fortunes={
+    const defaultFortunes={
       fact:["Bananas are berries. Strawberries are not.","A cloud can weigh more than a million pounds.","Octopuses have three hearts and no mortgage.","Wombat droppings are cube-shaped.","A group of flamingos is called a flamboyance.","Sharks existed before trees.","Your skeleton is always slightly wet.","Scotland's national animal is the unicorn.","Some turtles breathe through their backsides.","A snail can nap for three years."],
       rather:["Would you rather find free cake—or step on a rake?","Would you rather gain great fame—or lose every game?","Would you rather get paid—or be mildly betrayed?","Would you rather fly with grace—or smell like old lace?","Would you rather glow at night—or lose every fight?","Would you rather own a throne—or lick a cold stone?","Would you rather sleep till noon—or argue with the moon?","Would you rather have perfect hair—or fight one angry bear?"],
       encourage:["You have survived every bad day so far. Suspiciously impressive.","Keep going. Spite is renewable energy.","The void believes in you. Its standards are unclear.","You can do this. Panic later; schedule it.","Be the plot twist your problems did not budget for.","Rest if you must. Even villains need a dramatic pause.","Your chaos has excellent long-term potential.","Today is temporary. So is that awkward thing you said.","Rise and shine. Or rise and brood productively.","The bar is low. Step over it with theatrical confidence."]
     };
+    // Custom archive is stored locally so edits survive page refreshes.
+    let fortunes;
+    try{const saved=JSON.parse(localStorage.getItem('murmuring-orb-fortunes'));fortunes=saved&&['fact','rather','encourage'].every(k=>Array.isArray(saved[k])&&saved[k].length)?saved:structuredClone(defaultFortunes)}catch{fortunes=structuredClone(defaultFortunes)}
+    // Visitors receive the latest repository data; embedded fortunes remain an offline fallback.
+    fetch('https://api.github.com/repos/sseoyi/tools/contents/tools/magic-8-ball/data.json',{headers:{Accept:'application/vnd.github.raw+json'}}).then(r=>{if(!r.ok)throw 0;return r.json()}).then(remote=>{if(['fact','rather','encourage'].every(k=>Array.isArray(remote[k])&&remote[k].length)){fortunes=remote;localStorage.setItem('murmuring-orb-fortunes',JSON.stringify(remote))}}).catch(()=>{});
     const ball=document.querySelector('#ball'),glass=document.querySelector('#glass'),text=document.querySelector('#fortune'),stage=document.querySelector('#stage');
     let mode='fact',busy=false,last=-1;
     // Build lightweight particles once; CSS handles their movement at compositor speed.
@@ -85,6 +110,38 @@
     }
     ball.addEventListener('click',reveal);
     document.querySelectorAll('.mode').forEach(btn=>btn.addEventListener('click',()=>{if(btn.dataset.mode===mode||busy)return;mode=btn.dataset.mode;last=-1;document.querySelector('.mode.active').classList.remove('active');btn.classList.add('active');restart(ball,'mode-fade');setTimeout(reveal,150)}));
+
+    // Password-gated fortune editor (client-side gate for this standalone file).
+    const overlay=document.querySelector('#adminOverlay'),login=document.querySelector('#adminLogin'),editor=document.querySelector('#adminEditor'),password=document.querySelector('#adminPassword'),error=document.querySelector('#adminError'),list=document.querySelector('#fortuneList'),newFortune=document.querySelector('#newFortune');
+    let adminMode='fact';
+    function openAdmin(){overlay.classList.add('open');overlay.setAttribute('aria-hidden','false');setTimeout(()=>password.focus(),150)}
+    function closeAdmin(){overlay.classList.remove('open');overlay.setAttribute('aria-hidden','true');password.value='';error.textContent=''}
+    const githubFile={owner:'sseoyi',repo:'tools',path:'tools/magic-8-ball/data.json'};
+    let githubToken=sessionStorage.getItem('murmuring-orb-github-token')||'',saveQueue=Promise.resolve();
+    const syncStatus=document.querySelector('#syncStatus'),tokenInput=document.querySelector('#githubToken');tokenInput.value=githubToken;
+    function githubHeaders(){return{'Accept':'application/vnd.github+json','Authorization':`Bearer ${githubToken}`,'X-GitHub-Api-Version':'2022-11-28'}}
+    function utf8ToBase64(value){const bytes=new TextEncoder().encode(value);let binary='';bytes.forEach(byte=>binary+=String.fromCharCode(byte));return btoa(binary)}
+    async function syncToGithub(){
+      if(!githubToken)return;
+      syncStatus.className='sync-status';syncStatus.textContent='Saving to data.json…';
+      const url=`https://api.github.com/repos/${githubFile.owner}/${githubFile.repo}/contents/${githubFile.path}`;
+      const current=await fetch(url,{headers:githubHeaders()});
+      if(!current.ok)throw new Error(current.status===401?'Token rejected.':`Could not read data.json (${current.status}).`);
+      const metadata=await current.json();
+      const upload=await fetch(url,{method:'PUT',headers:{...githubHeaders(),'Content-Type':'application/json'},body:JSON.stringify({message:'Update magic 8 ball fortunes',content:utf8ToBase64(JSON.stringify(fortunes,null,2)+'\n'),sha:metadata.sha})});
+      if(!upload.ok){const detail=await upload.json().catch(()=>({}));throw new Error(detail.message||`Could not update data.json (${upload.status}).`)}
+      syncStatus.className='sync-status ok';syncStatus.textContent='Saved to data.json.';
+    }
+    function queueGithubSave(){if(!githubToken)return;saveQueue=saveQueue.catch(()=>{}).then(syncToGithub).catch(err=>{syncStatus.className='sync-status error';syncStatus.textContent=err.message})}
+    function saveFortunes(){localStorage.setItem('murmuring-orb-fortunes',JSON.stringify(fortunes));queueGithubSave()}
+    function renderArchive(){list.replaceChildren();fortunes[adminMode].forEach((copy,index)=>{const row=document.createElement('div');row.className='fortune-row';const words=document.createElement('div');words.className='fortune-copy';words.textContent=copy;const edit=document.createElement('button');edit.className='mini-btn';edit.textContent='EDIT';edit.addEventListener('click',()=>{const changed=prompt('Edit fortune:',fortunes[adminMode][index]);if(changed!==null&&changed.trim()){fortunes[adminMode][index]=changed.trim();saveFortunes();renderArchive()}});const del=document.createElement('button');del.className='mini-btn delete';del.textContent='DELETE';del.addEventListener('click',()=>{if(fortunes[adminMode].length===1){alert('Keep at least one fortune in each mode.');return}fortunes[adminMode].splice(index,1);saveFortunes();renderArchive()});row.append(words,edit,del);list.append(row)})}
+    document.querySelector('#adminOpen').addEventListener('click',openAdmin);document.querySelector('#adminClose').addEventListener('click',closeAdmin);overlay.addEventListener('click',e=>{if(e.target===overlay)closeAdmin()});
+    function unlock(){if(password.value==='2222'){login.hidden=true;editor.hidden=false;error.textContent='';renderArchive()}else{error.textContent='Incorrect password.';password.select()}}
+    document.querySelector('#adminUnlock').addEventListener('click',unlock);password.addEventListener('keydown',e=>{if(e.key==='Enter')unlock()});
+    document.querySelector('#connectGithub').addEventListener('click',async()=>{githubToken=tokenInput.value.trim();if(!githubToken){sessionStorage.removeItem('murmuring-orb-github-token');syncStatus.className='sync-status';syncStatus.textContent='Not connected — changes save only in this browser.';return}sessionStorage.setItem('murmuring-orb-github-token',githubToken);try{await syncToGithub()}catch(err){syncStatus.className='sync-status error';syncStatus.textContent=err.message}});
+    document.querySelectorAll('.admin-tab').forEach(tab=>tab.addEventListener('click',()=>{document.querySelector('.admin-tab.active').classList.remove('active');tab.classList.add('active');adminMode=tab.dataset.adminMode;renderArchive()}));
+    document.querySelector('#addFortune').addEventListener('click',()=>{const value=newFortune.value.trim();if(!value)return;fortunes[adminMode].push(value);newFortune.value='';saveFortunes();renderArchive()});
+    newFortune.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();document.querySelector('#addFortune').click()}});
   </script>
 </body>
 </html>

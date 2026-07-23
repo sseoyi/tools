@@ -57,6 +57,13 @@
           "submittedAt": "2026-07-23T06:34:59.231Z"
         }
       }
+    },
+    {
+      "id": "p_0p9ga3xj",
+      "name": "Kloe",
+      "quote": "Im đi gobi.",
+      "passwordHash": "e1cc8f7dce79a9f3c5c027b924d6cbf6384cf5ac70bfe1fdff96e94005209ae9",
+      "results": {}
     }
   ],
   "wordOfDay": {

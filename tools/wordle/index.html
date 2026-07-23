@@ -1,0 +1,1087 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wordle Ranking Board</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F5F8FA;
+    --surface:#FFFFFF;
+    --surface-alt:#F0F4F8;
+    --border:#E3E8EC;
+    --border-strong:#D7DEE3;
+    --text:#3C3C3C;
+    --text-dim:#6B7683;
+    --text-faint:#AEB6BD;
+
+    --green:#58CC02;
+    --green-dark:#3E9B00;
+    --green-bg:#EAFFD6;
+    --blue:#1CB0F6;
+    --blue-dark:#0A91CE;
+    --blue-bg:#E1F6FF;
+    --yellow:#FFC800;
+    --yellow-dark:#E0AC00;
+    --gold:#FFAB00;
+    --gold-dark:#CC8600;
+    --gold-bg:#FFF4D6;
+    --red:#FF4B4B;
+    --red-dark:#D63A3A;
+    --red-bg:#FFE7E7;
+    --purple:#CE82FF;
+    --purple-dark:#A159D1;
+
+    --tile-absent:#CBD1D6;
+    --tile-correct:#58CC02;
+    --tile-present:#FFC800;
+
+    --radius-lg:22px;
+    --radius-md:16px;
+    --radius-sm:12px;
+    --font-display:'Baloo 2',sans-serif;
+    --font-body:'Nunito',sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:var(--font-body);
+    font-size:16px;
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  ::selection{background:var(--green);color:#fff;}
+  a{color:inherit;text-decoration:none;}
+  button{font-family:inherit;cursor:pointer;}
+  input,textarea,select{font-family:inherit;}
+
+  /* ---------- Header ---------- */
+  header.topbar{
+    display:flex;align-items:center;justify-content:space-between;gap:16px;
+    padding:14px 28px;
+    background:var(--surface);
+    border-bottom:2px solid var(--border);
+    position:sticky;top:0;z-index:40;
+    flex-wrap:wrap;
+  }
+  .brand{display:flex;align-items:center;gap:14px;}
+  .brand-tiles{display:flex;gap:4px;}
+  .brand-tiles span{
+    width:26px;height:26px;border-radius:8px;
+    display:inline-flex;align-items:center;justify-content:center;
+    font-family:var(--font-display);font-weight:800;font-size:14px;color:#fff;
+    box-shadow:0 3px 0 rgba(0,0,0,0.15);
+  }
+  .brand-tiles span:nth-child(1){background:var(--green);}
+  .brand-tiles span:nth-child(2){background:var(--yellow);color:#5c4400;}
+  .brand-tiles span:nth-child(3){background:var(--tile-absent);color:#6b7683;}
+  .brand h1{
+    font-family:var(--font-display);font-size:24px;letter-spacing:0.01em;
+    margin:0;font-weight:800;color:var(--text);
+  }
+  .brand-meta{display:flex;align-items:center;gap:10px;margin-top:1px;flex-wrap:wrap;}
+  .brand .sub{font-size:12px;color:var(--text-faint);letter-spacing:0.04em;font-weight:700;}
+  .sync-status{
+    font-size:11px;font-weight:800;color:var(--text-faint);
+    display:inline-flex;align-items:center;gap:5px;
+  }
+  .sync-status .dot{width:6px;height:6px;border-radius:50%;background:var(--text-faint);display:inline-block;}
+  .sync-status.ok .dot{background:var(--green);}
+  .sync-status.ok{color:var(--green-dark);}
+  .sync-status.syncing .dot{background:var(--blue);animation:pulse 1s ease-in-out infinite;}
+  .sync-status.syncing{color:var(--blue-dark);}
+  .sync-status.warn .dot{background:var(--gold);}
+  .sync-status.warn{color:var(--gold-dark);}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.35;}}
+
+  .topbar-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .player-pill{
+    display:flex;align-items:center;gap:8px;
+    background:var(--surface-alt);border:2px solid var(--border);
+    padding:5px 12px 5px 5px;border-radius:999px;font-size:14px;
+  }
+  .player-pill .avatar{
+    width:32px;height:32px;border-radius:50%;
+    background:linear-gradient(135deg,var(--green),var(--blue));
+    display:flex;align-items:center;justify-content:center;
+    font-weight:800;font-size:13px;color:#fff;
+    font-family:var(--font-display);
+    box-shadow:0 2px 0 rgba(0,0,0,0.12);
+  }
+  .player-pill .pname{font-weight:800;color:var(--text);}
+
+  /* ---------- Buttons (Duolingo-style 3D press) ---------- */
+  .btn{
+    border-radius:16px;border:none;
+    background:var(--surface-alt);color:var(--text-dim);
+    padding:12px 20px;font-size:14px;font-weight:800;
+    display:inline-flex;align-items:center;gap:7px;
+    font-family:var(--font-display);
+    box-shadow:0 4px 0 var(--border-strong);
+    transition:transform .08s ease, box-shadow .08s ease;
+  }
+  .btn:hover{filter:brightness(1.03);}
+  .btn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--border-strong);}
+  .btn.primary{background:var(--green);color:#fff;box-shadow:0 4px 0 var(--green-dark);}
+  .btn.primary:active{box-shadow:0 1px 0 var(--green-dark);}
+  .btn.blue{background:var(--blue);color:#fff;box-shadow:0 4px 0 var(--blue-dark);}
+  .btn.blue:active{box-shadow:0 1px 0 var(--blue-dark);}
+  .btn.gold{background:var(--gold);color:#fff;box-shadow:0 4px 0 var(--gold-dark);}
+  .btn.gold:active{box-shadow:0 1px 0 var(--gold-dark);}
+  .btn.ghost{background:var(--surface);border:2px solid var(--border);box-shadow:0 4px 0 var(--border);color:var(--text-dim);}
+  .btn.ghost:active{box-shadow:0 1px 0 var(--border);}
+  .btn.small{padding:8px 14px;font-size:13px;box-shadow:0 3px 0 var(--border-strong);}
+  .btn.small:active{box-shadow:0 1px 0 var(--border-strong);}
+  .btn.tiny{padding:7px 10px;font-size:12px;border-radius:12px;box-shadow:0 2px 0 var(--border-strong);}
+  .btn.tiny:active{box-shadow:0 1px 0 var(--border-strong);transform:translateY(1px);}
+  .btn.icon-only{padding:8px 11px;}
+  .btn:disabled{opacity:.45;cursor:not-allowed;transform:none;}
+
+  /* ---------- Layout ---------- */
+  main.layout{
+    display:grid;grid-template-columns:2.15fr 1fr;gap:26px;
+    max-width:1360px;margin:0 auto;padding:28px 28px 90px;
+  }
+  @media (max-width:900px){
+    main.layout{grid-template-columns:1fr;padding:18px 16px 60px;}
+    header.topbar{padding:14px 16px;}
+    .brand h1{font-size:20px;}
+  }
+
+  section.col-title{
+    font-family:var(--font-display);font-size:23px;font-weight:800;
+    color:var(--text);margin:0 0 18px 2px;
+    display:flex;align-items:center;gap:10px;
+  }
+  section.col-title .count{
+    background:var(--blue-bg);border:none;color:var(--blue-dark);
+    padding:5px 13px;border-radius:999px;font-family:var(--font-display);font-size:14px;font-weight:700;
+  }
+
+  /* ---------- Rank board (bigger, more celebratory) ---------- */
+  #rankBoard{display:flex;flex-direction:column;gap:16px;}
+
+  .empty-state{
+    border:3px dashed var(--border-strong);border-radius:var(--radius-lg);
+    padding:52px 20px;text-align:center;color:var(--text-faint);font-size:16px;font-weight:700;
+    background:var(--surface);
+  }
+  .empty-state .big{font-size:40px;display:block;margin-bottom:12px;}
+
+  .rank-card{
+    background:var(--surface);border:2px solid var(--border);
+    border-radius:var(--radius-lg);
+    box-shadow:0 5px 0 var(--border);
+    padding:24px 28px;
+    display:flex;align-items:center;gap:22px;
+    opacity:0;transform:translateY(14px);
+    animation:cardIn .5s cubic-bezier(.2,.9,.3,1.2) forwards;
+    position:relative;overflow:hidden;
+  }
+  @keyframes cardIn{to{opacity:1;transform:translateY(0);}}
+
+  .rank-card.pending{opacity:.65;border-style:dashed;box-shadow:none;}
+
+  .rank-num{
+    font-family:var(--font-display);font-weight:800;font-size:28px;
+    color:var(--text-faint);width:38px;text-align:center;flex-shrink:0;
+  }
+
+  .rank-card.first{
+    border:3px solid var(--gold);
+    background:linear-gradient(135deg, var(--gold-bg), #FFFFFF 60%);
+    padding:32px 32px;
+    box-shadow:0 7px 0 var(--gold-dark);
+  }
+  .rank-card.first .rank-num{display:none;}
+  .crown{font-size:42px;flex-shrink:0;
+    animation:crownBounce 1.6s ease-in-out infinite;
+    filter:drop-shadow(0 3px 4px rgba(255,171,0,0.45));
+  }
+  @keyframes crownBounce{0%,100%{transform:translateY(0) rotate(-4deg);}50%{transform:translateY(-6px) rotate(4deg);}}
+
+  .rank-avatar{
+    width:58px;height:58px;border-radius:50%;flex-shrink:0;
+    background:linear-gradient(135deg,var(--green),var(--blue));
+    display:flex;align-items:center;justify-content:center;
+    font-family:var(--font-display);font-weight:800;color:#fff;font-size:21px;
+    box-shadow:0 3px 0 rgba(0,0,0,0.12);
+  }
+  .rank-card.first .rank-avatar{width:76px;height:76px;font-size:27px;background:linear-gradient(135deg,var(--gold),#FFD866);}
+
+  .rank-info{flex:1;min-width:0;}
+  .rank-name{
+    font-family:var(--font-display);font-weight:800;font-size:21px;
+    display:flex;align-items:center;gap:8px;color:var(--text);
+  }
+  .rank-card.first .rank-name{font-size:27px;color:#9C6B00;}
+  .rank-quote{
+    margin-top:5px;font-size:15px;color:#A9791C;font-weight:700;font-style:italic;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .rank-score{
+    font-family:var(--font-display);font-weight:700;font-size:16.5px;
+    color:var(--text-dim);margin-top:5px;
+  }
+  .rank-card.first .rank-score{color:#9C6B00;font-size:19px;}
+  .rank-score .fail{color:var(--red);}
+
+  .mini-grid{display:flex;flex-direction:column;gap:3px;flex-shrink:0;}
+  .mini-row{display:flex;gap:3px;}
+  .mini-tile{
+    width:16px;height:16px;border-radius:4px;background:var(--tile-absent);
+    opacity:0;transform:scale(.4);animation:tileIn .3s ease forwards;
+  }
+  .rank-card.first .mini-tile{width:21px;height:21px;border-radius:6px;}
+  .mini-tile.correct{background:var(--tile-correct);}
+  .mini-tile.present{background:var(--tile-present);}
+  @keyframes tileIn{to{opacity:1;transform:scale(1);}}
+
+  .waiting-label{font-size:14px;color:var(--text-faint);font-weight:700;}
+
+  /* ---------- Side column ---------- */
+  aside.side{display:flex;flex-direction:column;gap:22px;}
+  .panel{
+    background:var(--surface);border:2px solid var(--border);
+    border-radius:var(--radius-lg);padding:22px 22px;
+    box-shadow:0 4px 0 var(--border);
+  }
+  .panel h3{
+    margin:0 0 16px;font-family:var(--font-display);font-size:16px;font-weight:800;
+    color:var(--text);display:flex;align-items:center;gap:8px;
+  }
+  .panel h3 .badge-icon{
+    width:28px;height:28px;border-radius:9px;display:inline-flex;align-items:center;justify-content:center;
+    font-size:15px;flex-shrink:0;
+  }
+  .panel h3 .hint{color:var(--text-faint);font-weight:700;font-size:12.5px;text-transform:none;}
+
+  .today-date{font-size:14px;color:var(--text-dim);font-weight:700;margin-bottom:2px;}
+  .today-number{
+    font-family:var(--font-display);font-weight:800;font-size:38px;color:var(--blue-dark);
+    display:flex;align-items:baseline;gap:9px;
+  }
+  .today-number span.hash{font-size:17px;color:var(--text-faint);font-weight:700;}
+  .today-actions{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap;}
+
+  .wod-box{
+    margin-top:18px;border-top:2px dashed var(--border);padding-top:16px;
+  }
+  .wod-label{font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--text-faint);font-weight:800;margin-bottom:8px;}
+  .wod-word{
+    font-family:var(--font-display);font-weight:800;font-size:28px;letter-spacing:.05em;
+    color:var(--green-dark);background:var(--green-bg);
+    padding:8px 14px;border-radius:var(--radius-sm);display:inline-block;
+  }
+  .wod-placeholder{
+    font-size:13.5px;color:var(--text-faint);font-weight:700;
+    border:2px dashed var(--border-strong);border-radius:var(--radius-sm);
+    padding:16px;text-align:center;
+  }
+  .wod-progress{font-size:12.5px;color:var(--text-faint);font-weight:800;margin-top:8px;}
+
+  .lb-row{
+    display:flex;align-items:center;gap:12px;padding:10px 0;
+    border-bottom:2px solid var(--surface-alt);font-size:15px;
+  }
+  .lb-row:last-child{border-bottom:none;}
+  .lb-rank{
+    width:26px;height:26px;border-radius:8px;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;
+    background:var(--surface-alt);color:var(--text-faint);
+    font-family:var(--font-display);font-weight:800;font-size:13px;
+  }
+  .lb-row:nth-child(1) .lb-rank{background:var(--gold-bg);color:var(--gold-dark);}
+  .lb-row:nth-child(2) .lb-rank{background:#E7EBEF;color:#7A8794;}
+  .lb-row:nth-child(3) .lb-rank{background:#FBE3D0;color:#C1712F;}
+  .lb-name{flex:1;font-weight:800;display:flex;align-items:center;gap:7px;min-width:0;color:var(--text);}
+  .lb-name .streak{
+    font-size:12px;color:#B8580A;font-weight:800;white-space:nowrap;
+    background:#FFE3CC;border:none;
+    padding:3px 9px;border-radius:999px;
+  }
+  .lb-wins{font-family:var(--font-display);font-weight:800;color:var(--green-dark);font-size:16px;}
+
+  .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .stat-box{background:var(--surface-alt);border-radius:var(--radius-sm);padding:14px 14px;text-align:center;}
+  .stat-box .v{font-family:var(--font-display);font-weight:800;font-size:24px;color:var(--blue-dark);}
+  .stat-box .l{font-size:11px;color:var(--text-faint);font-weight:800;text-transform:uppercase;letter-spacing:.04em;margin-top:3px;}
+
+  textarea#resultInput{
+    width:100%;min-height:150px;background:var(--surface-alt);
+    border:2px solid var(--border);border-radius:var(--radius-md);
+    color:var(--text);padding:14px;font-family:'Nunito',monospace;font-size:14px;font-weight:700;
+    resize:vertical;outline:none;
+  }
+  textarea#resultInput:focus{border-color:var(--blue);}
+  .helper-text{font-size:12.5px;color:var(--text-faint);margin-top:10px;line-height:1.5;font-weight:700;}
+  .submit-row{display:flex;justify-content:space-between;align-items:center;margin-top:14px;gap:8px;flex-wrap:wrap;}
+  .field-msg{font-size:13px;margin-top:10px;font-weight:800;min-height:16px;}
+  .field-msg.err{color:var(--red);}
+  .field-msg.ok{color:var(--green-dark);}
+
+  .admin-toggle{font-size:12.5px;color:var(--text-faint);text-align:right;margin-top:16px;cursor:pointer;font-weight:800;}
+  .admin-toggle:hover{color:var(--text-dim);}
+  .admin-form{margin-top:12px;display:none;gap:8px;flex-direction:column;}
+  .admin-form.open{display:flex;}
+  .admin-form input{
+    background:var(--surface-alt);border:2px solid var(--border);
+    color:var(--text);border-radius:var(--radius-sm);padding:10px 12px;font-size:14px;outline:none;font-weight:700;
+  }
+  .admin-form input:focus{border-color:var(--purple);}
+
+  .login-hint{
+    background:var(--surface);border:2px dashed var(--border-strong);border-radius:var(--radius-lg);
+    padding:20px;text-align:center;color:var(--text-dim);font-size:14px;font-weight:700;
+  }
+  .login-hint .btn{margin-top:10px;}
+
+  footer.foot{
+    text-align:center;color:var(--text-faint);font-size:12.5px;font-weight:700;padding:24px;
+  }
+  footer.foot code{background:var(--surface-alt);padding:2px 6px;border-radius:6px;}
+
+  /* ---------- Modal ---------- */
+  .overlay{
+    position:fixed;inset:0;background:rgba(60,60,60,0.35);
+    display:none;align-items:center;justify-content:center;z-index:100;
+    padding:20px;backdrop-filter:blur(2px);
+  }
+  .overlay.open{display:flex;}
+  .modal{
+    background:var(--surface);border:2px solid var(--border);
+    border-radius:var(--radius-lg);padding:30px;width:100%;max-width:400px;
+    animation:modalIn .25s cubic-bezier(.2,.9,.3,1.2);
+    box-shadow:0 10px 0 var(--border);
+  }
+  @keyframes modalIn{from{opacity:0;transform:translateY(14px) scale(.96);}to{opacity:1;transform:translateY(0) scale(1);}}
+  .modal h2{margin:0 0 8px;font-family:var(--font-display);font-size:22px;font-weight:800;}
+  .modal p.desc{margin:0 0 20px;font-size:13.5px;color:var(--text-dim);line-height:1.55;font-weight:700;}
+  .modal label{display:block;font-size:12px;color:var(--text-faint);margin:14px 0 7px;text-transform:uppercase;letter-spacing:.04em;font-weight:800;}
+  .modal input{
+    width:100%;background:var(--surface-alt);border:2px solid var(--border);
+    color:var(--text);border-radius:var(--radius-sm);padding:12px 14px;font-size:15px;outline:none;font-weight:700;
+  }
+  .modal input:focus{border-color:var(--blue);}
+  .modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:24px;}
+  .modal-switch{text-align:center;margin-top:16px;font-size:13px;color:var(--text-dim);font-weight:700;}
+  .modal-switch a{color:var(--blue-dark);font-weight:800;text-decoration:underline;cursor:pointer;}
+
+  /* ---------- Toasts ---------- */
+  #toastWrap{position:fixed;bottom:22px;right:22px;display:flex;flex-direction:column;gap:10px;z-index:200;}
+  .toast{
+    background:var(--surface);border:2px solid var(--border);
+    padding:13px 18px;border-radius:var(--radius-md);font-size:14px;font-weight:800;
+    box-shadow:0 4px 0 var(--border);
+    animation:toastIn .25s cubic-bezier(.2,.9,.3,1.2);max-width:300px;color:var(--text);
+  }
+  .toast.ok{border-color:var(--green);box-shadow:0 4px 0 var(--green);color:var(--green-dark);}
+  .toast.err{border-color:var(--red);box-shadow:0 4px 0 var(--red);color:var(--red-dark);}
+  @keyframes toastIn{from{opacity:0;transform:translateX(24px);}to{opacity:1;transform:translateX(0);}}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <div class="brand-tiles"><span>W</span><span>R</span><span>B</span></div>
+    <div>
+      <h1>Wordle Ranking Board</h1>
+      <div class="brand-meta">
+        <span class="sub">sseoyi/tools · tools/wordle</span>
+        <span class="sync-status" id="syncStatus"><span class="dot"></span><span id="syncStatusText">Loading…</span></span>
+      </div>
+    </div>
+  </div>
+  <div class="topbar-actions">
+    <div id="loggedOutControls">
+      <button class="btn ghost" id="loginBtn">👤 Log in</button>
+    </div>
+    <div id="loggedInControls" style="display:none;align-items:center;gap:8px;">
+      <div class="player-pill">
+        <div class="avatar" id="activeAvatar">?</div>
+        <span class="pname" id="activePlayerName"></span>
+      </div>
+      <button class="btn ghost tiny" id="logoutBtn">Log out</button>
+    </div>
+    <button class="btn ghost icon-only tiny" id="refreshBtn" title="Pull latest data">🔄</button>
+    <button class="btn ghost icon-only tiny" id="publishBtn" title="Force publish now">⇪</button>
+  </div>
+</header>
+
+<main class="layout">
+  <section>
+    <div class="col-title">🏅 Ranking Board <span class="count" id="playerCount">0 players</span></div>
+    <div id="rankBoard"></div>
+  </section>
+
+  <aside class="side">
+    <div class="panel">
+      <h3><span class="badge-icon" style="background:var(--blue-bg);">📅</span> Today</h3>
+      <div class="today-date" id="todayDate">—</div>
+      <div class="today-number"><span class="hash">Wordle #</span><span id="todayNumber">—</span></div>
+      <div class="today-actions">
+        <a class="btn blue small" href="https://www.nytimes.com/games/wordle/index.html" target="_blank" rel="noopener">🎮 Play today's Wordle</a>
+      </div>
+      <div class="wod-box" id="wodBox"></div>
+      <div class="admin-toggle" id="adminToggle">⚙️ Admin settings</div>
+      <div class="admin-form" id="adminForm">
+        <input id="adminPass" type="password" placeholder="Admin passcode">
+        <input id="adminWordNum" type="number" placeholder="Wordle # (e.g. 1860)">
+        <input id="adminWord" type="text" placeholder="Today's answer (5 letters)" maxlength="5" style="text-transform:uppercase;">
+        <button class="btn gold small" id="adminSaveBtn">💾 Save word of the day</button>
+      </div>
+    </div>
+
+    <div class="panel" id="myStatsPanel" style="display:none;">
+      <h3><span class="badge-icon" style="background:var(--green-bg);">📊</span> My stats</h3>
+      <div class="stat-grid">
+        <div class="stat-box"><div class="v" id="statWins">0</div><div class="l">Wins</div></div>
+        <div class="stat-box"><div class="v" id="statStreak">0</div><div class="l">Current streak</div></div>
+        <div class="stat-box"><div class="v" id="statGames">0</div><div class="l">Games played</div></div>
+        <div class="stat-box"><div class="v" id="statAvg">–</div><div class="l">Avg guesses</div></div>
+      </div>
+    </div>
+
+    <div class="panel" id="submitPanel" style="display:none;">
+      <h3><span class="badge-icon" style="background:var(--gold-bg);">✍️</span> Submit today's result</h3>
+      <textarea id="resultInput" placeholder="Paste your Wordle share text here, e.g.&#10;&#10;Wordle 1,860 6/6&#10;⬜⬜🟨⬜⬜&#10;⬜🟨⬜⬜⬜&#10;🟨⬜🟨⬜⬜&#10;⬜🟨🟨🟨⬜&#10;🟨⬜🟨🟩🟨&#10;🟩🟩🟩🟩🟩"></textarea>
+      <div class="helper-text">Copy the "Share" text straight from the Wordle results screen and paste it above. Fewer guesses ranks higher — a 1/6 beats a 6/6. Saving publishes to the board automatically.</div>
+      <div class="submit-row">
+        <button class="btn primary" id="saveResultBtn">✅ Save result</button>
+        <span style="font-size:12px;color:var(--text-faint);font-weight:800;" id="resultDateLabel"></span>
+      </div>
+      <div class="field-msg" id="resultMsg"></div>
+    </div>
+
+    <div class="panel" id="loginHintPanel">
+      <div class="login-hint">
+        Log in to submit today's result and see your stats.
+        <br>
+        <button class="btn primary small" id="loginHintBtn">👤 Log in</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3><span class="badge-icon" style="background:var(--purple);color:#fff;">🏆</span> Leaderboard <span class="hint">all-time wins</span></h3>
+      <div id="leaderboard"></div>
+    </div>
+  </aside>
+</main>
+
+<footer class="foot">Wordle Ranking Board · data lives in <code>tools/wordle/data.json</code> on <a href="https://github.com/sseoyi/tools" target="_blank" rel="noopener">sseoyi/tools</a></footer>
+
+<!-- Login / signup modal -->
+<div class="overlay" id="authModalOverlay">
+  <div class="modal">
+    <h2 id="authTitle">👋 Log in</h2>
+    <p class="desc" id="authDesc">Log in with your player account to submit results and track your streak.</p>
+
+    <div id="loginFields">
+      <label for="loginUsername">Username</label>
+      <input id="loginUsername" type="text" maxlength="24" placeholder="e.g. An" autocomplete="username">
+      <label for="loginPassword">Password</label>
+      <input id="loginPassword" type="password" placeholder="••••••••" autocomplete="current-password">
+    </div>
+
+    <div id="signupFields" style="display:none;">
+      <label for="signupUsername">Username</label>
+      <input id="signupUsername" type="text" maxlength="24" placeholder="e.g. An" autocomplete="username">
+      <label for="signupPassword">Password</label>
+      <input id="signupPassword" type="password" placeholder="At least 4 characters" autocomplete="new-password">
+      <label for="signupQuote">Quote <span style="opacity:.6;">(optional)</span></label>
+      <input id="signupQuote" type="text" maxlength="80" placeholder="Im đi gobi.">
+    </div>
+
+    <div class="field-msg err" id="authMsg"></div>
+
+    <div class="modal-actions">
+      <button class="btn ghost" id="authCancel">Cancel</button>
+      <button class="btn primary" id="authSubmit">Log in</button>
+    </div>
+    <div class="modal-switch" id="authSwitch">Don't have an account? <a id="authToggle">Create new account</a></div>
+  </div>
+</div>
+
+<!-- Token modal -->
+<div class="overlay" id="tokenModalOverlay">
+  <div class="modal">
+    <h2>🔑 Connect publishing</h2>
+    <p class="desc">Enter a GitHub personal access token with write access to <strong>sseoyi/tools</strong>. It's saved only in this browser's local storage, never sent anywhere but api.github.com, and you only need to do this once per device.</p>
+    <label for="tmToken">Personal access token</label>
+    <input id="tmToken" type="password" placeholder="ghp_...">
+    <div class="modal-actions">
+      <button class="btn ghost" id="tmCancel">Cancel</button>
+      <button class="btn primary" id="tmSave">Save & continue</button>
+    </div>
+  </div>
+</div>
+
+<div id="toastWrap"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ================= CONFIG ================= */
+  const REPO_OWNER = "sseoyi";
+  const REPO_NAME  = "tools";
+  const FILE_PATH  = "tools/wordle/data.json";
+  const BRANCH     = "main";
+  const API_URL    = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${encodeURIComponent(FILE_PATH).replace(/%2F/g,'/')}?ref=${BRANCH}`;
+  const ADMIN_CODE = "gobi-admin"; // change this to whatever passcode the group agrees on
+
+  const LS_TOKEN   = "wordle_gh_token";
+  const LS_PLAYER  = "wordle_current_player";
+  const LS_CACHE   = "wordle_data_cache";
+
+  const TILE_MAP = { "🟩":"correct","🟦":"correct","🟨":"present","🟧":"present","⬜":"absent","⬛":"absent" };
+
+  /* ================= STATE ================= */
+  let data = { players: [], wordOfDay: { date:"", number:null, word:"" } };
+  let currentPlayerId = localStorage.getItem(LS_PLAYER) || "";
+  let authMode = "login"; // or "signup"
+
+  /* ================= UTIL ================= */
+  function todayKey(){
+    const d = new Date();
+    const p = n => String(n).padStart(2,"0");
+    return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
+  }
+  function prettyDate(key){
+    const [y,m,d] = key.split("-").map(Number);
+    return new Date(y,m-1,d).toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"});
+  }
+  function shiftDate(key, deltaDays){
+    const [y,m,d] = key.split("-").map(Number);
+    const dt = new Date(y,m-1,d);
+    dt.setDate(dt.getDate()+deltaDays);
+    const p = n => String(n).padStart(2,"0");
+    return `${dt.getFullYear()}-${p(dt.getMonth()+1)}-${p(dt.getDate())}`;
+  }
+  function initials(name){
+    return (name||"?").trim().split(/\s+/).map(w=>w[0]).slice(0,2).join("").toUpperCase();
+  }
+  function scoreLabel(score){
+    return score >= 7 ? '<span class="fail">X/6</span>' : `${score}/6`;
+  }
+  function uid(){ return "p_" + Math.random().toString(36).slice(2,10); }
+  function toast(msg, kind){
+    const el = document.createElement("div");
+    el.className = "toast " + (kind||"");
+    el.textContent = msg;
+    document.getElementById("toastWrap").appendChild(el);
+    setTimeout(()=>{ el.style.opacity="0"; el.style.transition="opacity .3s"; setTimeout(()=>el.remove(),300); }, 3800);
+  }
+  async function hashPassword(pw){
+    const enc = new TextEncoder().encode(pw);
+    const buf = await crypto.subtle.digest("SHA-256", enc);
+    return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,"0")).join("");
+  }
+  function setSyncStatus(state, text){
+    const el = document.getElementById("syncStatus");
+    el.className = "sync-status " + state;
+    document.getElementById("syncStatusText").textContent = text;
+  }
+
+  /* ================= PARSING ================= */
+  function parseWordleShare(text){
+    const lines = text.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
+    const headerLine = lines.find(l => /wordle/i.test(l));
+    if(!headerLine) return null;
+    const m = headerLine.match(/wordle\s*(?:\(.*?\))?\s*([\d.,]+)\s+([1-6xX])\/6/i);
+    if(!m) return null;
+    const number = parseInt(m[1].replace(/[.,]/g,""), 10);
+    const score = /x/i.test(m[2]) ? 7 : parseInt(m[2], 10);
+
+    const gridRows = [];
+    for(const line of lines){
+      const chars = Array.from(line).filter(ch => TILE_MAP[ch]);
+      if(chars.length === 5 && chars.length === Array.from(line).length){
+        gridRows.push(chars.map(ch => TILE_MAP[ch]));
+      }
+    }
+    return { number, score, grid: gridRows, raw: text.trim() };
+  }
+
+  /* ================= GITHUB SYNC ================= */
+  function getToken(){ return localStorage.getItem(LS_TOKEN) || ""; }
+
+  async function fetchRemote(silent){
+    if(!silent) setSyncStatus("syncing", "Syncing…");
+    try{
+      const res = await fetch(API_URL, { headers: { "Accept":"application/vnd.github+json" }, cache:"no-store" });
+      if(res.status === 404){
+        setSyncStatus("warn", "No data yet");
+        return;
+      }
+      if(!res.ok) throw new Error("HTTP " + res.status);
+      const json = await res.json();
+      const decoded = decodeURIComponent(escape(atob(json.content.replace(/\n/g,""))));
+      const parsed = JSON.parse(decoded);
+      data = normalizeData(parsed);
+      localStorage.setItem(LS_CACHE, JSON.stringify(data));
+      setSyncStatus("ok", "Synced");
+    }catch(err){
+      const cached = localStorage.getItem(LS_CACHE);
+      if(cached){
+        data = normalizeData(JSON.parse(cached));
+        setSyncStatus("warn", "Offline · cached");
+      }else{
+        setSyncStatus("warn", "Offline · local only");
+      }
+    }
+  }
+
+  function normalizeData(raw){
+    return {
+      players: Array.isArray(raw.players) ? raw.players : [],
+      wordOfDay: raw.wordOfDay || { date:"", number:null, word:"" }
+    };
+  }
+
+  async function publish(mutateFn){
+    let token = getToken();
+    if(!token){
+      openTokenModal(() => publish(mutateFn));
+      return;
+    }
+    setSyncStatus("syncing", "Publishing…");
+    const publishBtn = document.getElementById("publishBtn");
+    publishBtn.disabled = true;
+    try{
+      const res = await fetch(API_URL, { headers:{ "Accept":"application/vnd.github+json" }, cache:"no-store" });
+      let remoteData = { players:[], wordOfDay:{date:"",number:null,word:""} };
+      let sha = null;
+      if(res.ok){
+        const json = await res.json();
+        sha = json.sha;
+        remoteData = normalizeData(JSON.parse(decodeURIComponent(escape(atob(json.content.replace(/\n/g,""))))));
+      }else if(res.status !== 404){
+        throw new Error("HTTP " + res.status);
+      }
+
+      mutateFn(remoteData);
+      data = remoteData;
+      localStorage.setItem(LS_CACHE, JSON.stringify(data));
+
+      const body = {
+        message: `Update wordle data — ${new Date().toISOString().slice(0,16).replace("T"," ")}`,
+        content: btoa(unescape(encodeURIComponent(JSON.stringify(data, null, 2)))),
+        branch: BRANCH
+      };
+      if(sha) body.sha = sha;
+
+      const putRes = await fetch(API_URL.split("?")[0], {
+        method:"PUT",
+        headers:{
+          "Accept":"application/vnd.github+json",
+          "Authorization":"token " + token,
+          "Content-Type":"application/json"
+        },
+        body: JSON.stringify(body)
+      });
+      if(!putRes.ok){
+        const errJson = await putRes.json().catch(()=>({}));
+        throw new Error(errJson.message || ("HTTP " + putRes.status));
+      }
+      setSyncStatus("ok", "Synced");
+      toast("Published ✓", "ok");
+      renderAll();
+    }catch(err){
+      console.error(err);
+      setSyncStatus("warn", "Publish failed");
+      if(/401|Bad credentials/i.test(err.message)){
+        localStorage.removeItem(LS_TOKEN);
+        toast("That token was rejected. Please reconnect publishing.", "err");
+      }else{
+        toast("Publish failed: " + err.message, "err");
+      }
+    }finally{
+      publishBtn.disabled = false;
+    }
+  }
+
+  /* ================= DERIVED STATS ================= */
+  function computeDailyWinners(){
+    const byDate = {};
+    for(const p of data.players){
+      for(const [date, r] of Object.entries(p.results || {})){
+        (byDate[date] = byDate[date] || []).push({ id:p.id, score:r.score });
+      }
+    }
+    const winners = {};
+    for(const [date, entries] of Object.entries(byDate)){
+      const eligible = entries.filter(e => e.score <= 6);
+      if(eligible.length === 0) continue;
+      const min = Math.min(...eligible.map(e=>e.score));
+      winners[date] = new Set(eligible.filter(e=>e.score===min).map(e=>e.id));
+    }
+    return winners;
+  }
+
+  function computePlayerStats(player, dailyWinners){
+    const dates = Object.keys(player.results || {}).sort();
+    let wins = 0;
+    const winDates = new Set();
+    for(const d of dates){
+      if(dailyWinners[d] && dailyWinners[d].has(player.id)){ wins++; winDates.add(d); }
+    }
+    let streak = 0;
+    let cursor = todayKey();
+    if(!winDates.has(cursor)) cursor = shiftDate(cursor, -1);
+    while(winDates.has(cursor)){
+      streak++;
+      cursor = shiftDate(cursor, -1);
+    }
+    const games = dates.length;
+    const validScores = dates.map(d=>player.results[d].score).filter(s=>s<=6);
+    const avg = validScores.length ? (validScores.reduce((a,b)=>a+b,0)/validScores.length).toFixed(2) : "–";
+    return { wins, streak, games, avg };
+  }
+
+  /* ================= RENDER ================= */
+  function renderAll(){
+    renderHeader();
+    renderRankBoard();
+    renderSidePanel();
+    renderLeaderboard();
+    renderMyStats();
+  }
+
+  function renderHeader(){
+    const active = data.players.find(p=>p.id===currentPlayerId);
+    if(!active) currentPlayerId = "";
+    localStorage.setItem(LS_PLAYER, currentPlayerId);
+
+    document.getElementById("loggedOutControls").style.display = active ? "none" : "";
+    document.getElementById("loggedInControls").style.display = active ? "flex" : "none";
+    document.getElementById("loginHintPanel").style.display = active ? "none" : "";
+    document.getElementById("submitPanel").style.display = active ? "" : "none";
+    document.getElementById("myStatsPanel").style.display = active ? "" : "none";
+
+    if(active){
+      document.getElementById("activeAvatar").textContent = initials(active.name);
+      document.getElementById("activePlayerName").textContent = active.name;
+    }
+
+    document.getElementById("resultDateLabel").textContent = "for " + prettyDate(todayKey());
+    document.getElementById("playerCount").textContent = data.players.length + (data.players.length===1 ? " player" : " players");
+  }
+
+  function renderRankBoard(){
+    const board = document.getElementById("rankBoard");
+    board.innerHTML = "";
+    if(data.players.length === 0){
+      board.innerHTML = `<div class="empty-state"><span class="big">🟩🟨⬜</span>No players yet. Log in to create the first account.</div>`;
+      return;
+    }
+    const today = todayKey();
+    const dailyWinners = computeDailyWinners();
+    const winnersToday = dailyWinners[today] || new Set();
+
+    const submitted = data.players.filter(p => p.results && p.results[today]);
+    const pending = data.players.filter(p => !(p.results && p.results[today]));
+
+    submitted.sort((a,b)=> a.results[today].score - b.results[today].score);
+
+    submitted.forEach((p, idx) => {
+      const r = p.results[today];
+      const isFirst = winnersToday.has(p.id);
+      const card = document.createElement("div");
+      card.className = "rank-card" + (isFirst ? " first" : "");
+      card.style.animationDelay = (idx*0.07)+"s";
+      const quote = p.quote && p.quote.trim() ? p.quote.trim() : "Im đi gobi.";
+      card.innerHTML = `
+        ${isFirst ? '<span class="crown">👑</span>' : `<div class="rank-num">${idx+1}</div>`}
+        <div class="rank-avatar">${initials(p.name)}</div>
+        <div class="rank-info">
+          <div class="rank-name">${escapeHtml(p.name)}</div>
+          ${isFirst ? `<div class="rank-quote">"${escapeHtml(quote)}"</div>` : ""}
+          <div class="rank-score">${scoreLabel(r.score)}</div>
+        </div>
+        <div class="mini-grid">${renderMiniGrid(r.grid)}</div>
+      `;
+      board.appendChild(card);
+    });
+
+    pending.forEach((p, idx) => {
+      const card = document.createElement("div");
+      card.className = "rank-card pending";
+      card.style.animationDelay = ((submitted.length+idx)*0.07)+"s";
+      card.innerHTML = `
+        <div class="rank-num">–</div>
+        <div class="rank-avatar">${initials(p.name)}</div>
+        <div class="rank-info">
+          <div class="rank-name">${escapeHtml(p.name)}</div>
+          <div class="waiting-label">⏳ Hasn't submitted today's result</div>
+        </div>
+      `;
+      board.appendChild(card);
+    });
+  }
+
+  function renderMiniGrid(grid){
+    if(!grid || !grid.length) return "";
+    return grid.map((row,ri) => `<div class="mini-row">${
+      row.map((cls,ci) => `<div class="mini-tile ${cls}" style="animation-delay:${(ri*5+ci)*0.03}s"></div>`).join("")
+    }</div>`).join("");
+  }
+
+  function renderSidePanel(){
+    document.getElementById("todayDate").textContent = prettyDate(todayKey());
+
+    const today = todayKey();
+    const allSubmitted = data.players.length > 0 && data.players.every(p => p.results && p.results[today]);
+
+    let puzzleNumber = data.wordOfDay.date === today ? data.wordOfDay.number : null;
+    if(!puzzleNumber){
+      const anySubmission = data.players.map(p=>p.results && p.results[today]).find(Boolean);
+      if(anySubmission) puzzleNumber = anySubmission.number;
+    }
+    document.getElementById("todayNumber").textContent = puzzleNumber ? puzzleNumber.toLocaleString() : "—";
+
+    const wodBox = document.getElementById("wodBox");
+    const submittedCount = data.players.filter(p=>p.results && p.results[today]).length;
+    if(allSubmitted && data.wordOfDay.date === today && data.wordOfDay.word){
+      wodBox.innerHTML = `
+        <div class="wod-label">🔤 Word of the Day</div>
+        <div class="wod-word">${escapeHtml(data.wordOfDay.word.toUpperCase())}</div>
+      `;
+    } else if (allSubmitted) {
+      wodBox.innerHTML = `
+        <div class="wod-label">🔤 Word of the Day</div>
+        <div class="wod-placeholder">Everyone's in! Waiting on the admin to reveal today's word. 🎉</div>
+      `;
+    } else {
+      wodBox.innerHTML = `
+        <div class="wod-label">🔤 Word of the Day</div>
+        <div class="wod-placeholder">Hidden until every player submits.</div>
+        <div class="wod-progress">${submittedCount}/${data.players.length || 0} submitted</div>
+      `;
+    }
+  }
+
+  function renderLeaderboard(){
+    const wrap = document.getElementById("leaderboard");
+    if(data.players.length === 0){
+      wrap.innerHTML = `<div class="empty-state" style="padding:24px;">No players yet.</div>`;
+      return;
+    }
+    const dailyWinners = computeDailyWinners();
+    const rows = data.players.map(p => ({ p, stats: computePlayerStats(p, dailyWinners) }));
+    rows.sort((a,b) => b.stats.wins - a.stats.wins || b.stats.streak - a.stats.streak);
+
+    wrap.innerHTML = rows.map((row,idx) => {
+      const streakBadge = row.stats.streak >= 3 ? `<span class="streak">🔥Streak ${row.stats.streak}</span>` : "";
+      return `<div class="lb-row">
+        <div class="lb-rank">${idx+1}</div>
+        <div class="lb-name">${escapeHtml(row.p.name)} ${streakBadge}</div>
+        <div class="lb-wins">${row.stats.wins}</div>
+      </div>`;
+    }).join("");
+  }
+
+  function renderMyStats(){
+    const active = data.players.find(p=>p.id===currentPlayerId);
+    if(!active) return;
+    const dailyWinners = computeDailyWinners();
+    const s = computePlayerStats(active, dailyWinners);
+    document.getElementById("statWins").textContent = s.wins;
+    document.getElementById("statStreak").textContent = s.streak;
+    document.getElementById("statGames").textContent = s.games;
+    document.getElementById("statAvg").textContent = s.avg;
+  }
+
+  function escapeHtml(str){
+    return String(str).replace(/[&<>"']/g, ch => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[ch]));
+  }
+
+  /* ================= AUTH MODAL ================= */
+  function setAuthMode(mode){
+    authMode = mode;
+    document.getElementById("authMsg").textContent = "";
+    if(mode === "login"){
+      document.getElementById("authTitle").textContent = "👋 Log in";
+      document.getElementById("authDesc").textContent = "Log in with your player account to submit results and track your streak.";
+      document.getElementById("loginFields").style.display = "";
+      document.getElementById("signupFields").style.display = "none";
+      document.getElementById("authSubmit").textContent = "Log in";
+      document.getElementById("authSwitch").innerHTML = 'Don\'t have an account? <a id="authToggle">Create new account</a>';
+    }else{
+      document.getElementById("authTitle").textContent = "🙋 Create account";
+      document.getElementById("authDesc").textContent = "Pick a username and password. Your quote shows up on the board only on days you take 1st place.";
+      document.getElementById("loginFields").style.display = "none";
+      document.getElementById("signupFields").style.display = "";
+      document.getElementById("authSubmit").textContent = "Create account";
+      document.getElementById("authSwitch").innerHTML = 'Already have an account? <a id="authToggle">Log in</a>';
+    }
+    document.getElementById("authToggle").addEventListener("click", ()=> setAuthMode(mode==="login" ? "signup" : "login"));
+  }
+
+  function openAuthModal(mode){
+    document.getElementById("loginUsername").value = "";
+    document.getElementById("loginPassword").value = "";
+    document.getElementById("signupUsername").value = "";
+    document.getElementById("signupPassword").value = "";
+    document.getElementById("signupQuote").value = "";
+    setAuthMode(mode || "login");
+    document.getElementById("authModalOverlay").classList.add("open");
+    document.getElementById("loginUsername").focus();
+  }
+  function closeAuthModal(){ document.getElementById("authModalOverlay").classList.remove("open"); }
+
+  async function handleAuthSubmit(){
+    const msgEl = document.getElementById("authMsg");
+    msgEl.textContent = "";
+    if(authMode === "login"){
+      const username = document.getElementById("loginUsername").value.trim();
+      const password = document.getElementById("loginPassword").value;
+      if(!username || !password){ msgEl.textContent = "Enter both username and password."; return; }
+      let player = data.players.find(p=>p.name.toLowerCase()===username.toLowerCase());
+      if(!player){
+        await fetchRemote(true);
+        player = data.players.find(p=>p.name.toLowerCase()===username.toLowerCase());
+      }
+      if(!player){ msgEl.textContent = "No account with that username."; return; }
+      const hash = await hashPassword(password);
+      if(player.passwordHash !== hash){ msgEl.textContent = "Incorrect password."; return; }
+      currentPlayerId = player.id;
+      localStorage.setItem(LS_PLAYER, currentPlayerId);
+      closeAuthModal();
+      renderAll();
+      toast(`Welcome back, ${player.name}! 👋`, "ok");
+    }else{
+      const username = document.getElementById("signupUsername").value.trim();
+      const password = document.getElementById("signupPassword").value;
+      const quote = document.getElementById("signupQuote").value.trim();
+      if(!username){ msgEl.textContent = "Choose a username."; return; }
+      if(password.length < 4){ msgEl.textContent = "Password needs at least 4 characters."; return; }
+      if(data.players.some(p=>p.name.toLowerCase()===username.toLowerCase())){
+        msgEl.textContent = "That username is already taken."; return;
+      }
+      const passwordHash = await hashPassword(password);
+      const newPlayer = { id: uid(), name: username, quote, passwordHash, results: {} };
+      closeAuthModal();
+      if(!data.players.some(p=>p.id===newPlayer.id)) data.players.push(newPlayer);
+      currentPlayerId = newPlayer.id;
+      localStorage.setItem(LS_PLAYER, currentPlayerId);
+      renderAll();
+      publish((remoteData) => {
+        if(remoteData.players.some(p=>p.name.toLowerCase()===username.toLowerCase())){
+          throw new Error("Username was just taken — try another one");
+        }
+        remoteData.players.push(newPlayer);
+      });
+      toast(`Account created! Logged in as ${username} 🎉`, "ok");
+    }
+  }
+
+  function logout(){
+    currentPlayerId = "";
+    localStorage.removeItem(LS_PLAYER);
+    renderAll();
+  }
+
+  let pendingPublishAction = null;
+  function openTokenModal(onSaved){
+    pendingPublishAction = onSaved;
+    document.getElementById("tmToken").value = "";
+    document.getElementById("tokenModalOverlay").classList.add("open");
+    document.getElementById("tmToken").focus();
+  }
+  function closeTokenModal(){ document.getElementById("tokenModalOverlay").classList.remove("open"); }
+
+  /* ================= EVENTS ================= */
+  document.getElementById("loginBtn").addEventListener("click", ()=>openAuthModal("login"));
+  document.getElementById("loginHintBtn").addEventListener("click", ()=>openAuthModal("login"));
+  document.getElementById("logoutBtn").addEventListener("click", logout);
+  document.getElementById("authCancel").addEventListener("click", closeAuthModal);
+  document.getElementById("authModalOverlay").addEventListener("click", e=>{ if(e.target.id==="authModalOverlay") closeAuthModal(); });
+  document.getElementById("authSubmit").addEventListener("click", handleAuthSubmit);
+
+  document.getElementById("refreshBtn").addEventListener("click", async ()=>{
+    await fetchRemote();
+    renderAll();
+    toast("Pulled the latest data.", "ok");
+  });
+
+  document.getElementById("publishBtn").addEventListener("click", ()=>{
+    publish((remoteData)=>{
+      remoteData.players = data.players;
+      remoteData.wordOfDay = data.wordOfDay;
+    });
+  });
+
+  document.getElementById("tmCancel").addEventListener("click", closeTokenModal);
+  document.getElementById("tokenModalOverlay").addEventListener("click", e=>{ if(e.target.id==="tokenModalOverlay") closeTokenModal(); });
+  document.getElementById("tmSave").addEventListener("click", ()=>{
+    const token = document.getElementById("tmToken").value.trim();
+    if(!token){ toast("Paste a token first.", "err"); return; }
+    localStorage.setItem(LS_TOKEN, token);
+    closeTokenModal();
+    if(pendingPublishAction){ const fn = pendingPublishAction; pendingPublishAction = null; fn(); }
+  });
+
+  document.getElementById("saveResultBtn").addEventListener("click", ()=>{
+    const active = data.players.find(p=>p.id===currentPlayerId);
+    const msgEl = document.getElementById("resultMsg");
+    if(!active){ msgEl.textContent = "Log in first."; msgEl.className="field-msg err"; return; }
+    const text = document.getElementById("resultInput").value;
+    const parsed = parseWordleShare(text);
+    if(!parsed){
+      msgEl.textContent = "Couldn't read that — paste the exact Wordle share text.";
+      msgEl.className = "field-msg err";
+      return;
+    }
+    const key = todayKey();
+    const record = { number: parsed.number, score: parsed.score, grid: parsed.grid, raw: parsed.raw, submittedAt: new Date().toISOString() };
+    active.results[key] = record;
+
+    msgEl.textContent = "Saved! Publishing automatically…";
+    msgEl.className = "field-msg ok";
+    document.getElementById("resultInput").value = "";
+    renderAll();
+
+    publish((remoteData)=>{
+      let rp = remoteData.players.find(p=>p.id===active.id);
+      if(!rp){ rp = { id:active.id, name:active.name, quote:active.quote, passwordHash:active.passwordHash, results:{} }; remoteData.players.push(rp); }
+      rp.results[key] = record;
+    });
+  });
+
+  document.getElementById("adminToggle").addEventListener("click", ()=>{
+    document.getElementById("adminForm").classList.toggle("open");
+  });
+
+  document.getElementById("adminSaveBtn").addEventListener("click", ()=>{
+    const pass = document.getElementById("adminPass").value;
+    if(pass !== ADMIN_CODE){ toast("Wrong admin passcode.", "err"); return; }
+    const num = parseInt(document.getElementById("adminWordNum").value, 10);
+    const word = document.getElementById("adminWord").value.trim().toUpperCase();
+    if(!num || word.length !== 5){ toast("Enter the puzzle number and a 5-letter word.", "err"); return; }
+    const wod = { date: todayKey(), number: num, word };
+    data.wordOfDay = wod;
+    document.getElementById("adminForm").classList.remove("open");
+    document.getElementById("adminPass").value = "";
+    renderAll();
+    publish((remoteData)=>{ remoteData.wordOfDay = wod; });
+  });
+
+  /* ================= INIT ================= */
+  (async function init(){
+    const cached = localStorage.getItem(LS_CACHE);
+    if(cached){ data = normalizeData(JSON.parse(cached)); renderAll(); }
+    await fetchRemote(true);
+    renderAll();
+  })();
+
+})();
+</script>
+</body>
+</html>

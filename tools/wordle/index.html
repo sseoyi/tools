@@ -543,7 +543,9 @@
   const TILE_MAP = { "🟩":"correct","🟦":"correct","🟨":"present","🟧":"present","⬜":"absent","⬛":"absent" };
 
   /* ================= STATE ================= */
-  let data = { players: [], wordOfDay: { date:"", number:null, word:"" } };
+  let data = { players: [
+    { id: "p_phuong01", name: "phuong", quote: "", passwordHash: "edee29f882543b956620b26d0ee0e7e950399b1c4222f5de05e06425b4c995e9", results: {} }
+  ], wordOfDay: { date:"", number:null, word:"" } };
   let currentPlayerId = localStorage.getItem(LS_PLAYER) || "";
   let authMode = "login"; // or "signup"
 

@@ -20,7 +20,15 @@
       "name": "Kloe",
       "quote": "Im đi gobi.",
       "passwordHash": "e1cc8f7dce79a9f3c5c027b924d6cbf6384cf5ac70bfe1fdff96e94005209ae9",
-      "results": {}
+      "results": {
+        "2026-07-23": {
+          "number": 1860,
+          "score": 4,
+          "grid": [],
+          "raw": "Wordle 1,860 4/6\n⬜🟨⬜⬜⬜⬜🟨⬜⬜⬜🟩🟩⬜⬜⬜🟩🟩🟩🟩🟩",
+          "submittedAt": "2026-07-23T06:39:35.502Z"
+        }
+      }
     }
   ],
   "wordOfDay": {

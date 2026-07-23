@@ -2,7 +2,7 @@
   "players": [
     {
       "id": "p_phuong01",
-      "name": "MVP",
+      "name": "Alecia",
       "quote": "",
       "passwordHash": "edee29f882543b956620b26d0ee0e7e950399b1c4222f5de05e06425b4c995e9",
       "results": {
@@ -29,13 +29,6 @@
           "submittedAt": "2026-07-23T06:39:35.502Z"
         }
       }
-    },
-    {
-      "id": "p_26o5mgry",
-      "name": "Nana English",
-      "quote": "Đky học TA tại đây",
-      "passwordHash": "f43ffce6e20a412f1c100907ca800b5450668f8e9ffb0b151f4287278de38106",
-      "results": {}
     }
   ],
   "wordOfDay": {

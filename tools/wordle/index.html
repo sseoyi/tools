@@ -313,17 +313,30 @@
   .stat-box .l{font-size:11px;color:var(--text-faint);font-weight:800;text-transform:uppercase;letter-spacing:.04em;margin-top:3px;}
 
   textarea#resultInput{
-    width:100%;min-height:150px;background:var(--surface-alt);
+    width:100%;min-height:96px;background:var(--surface-alt);
     border:2px solid var(--border);border-radius:var(--radius-md);
-    color:var(--text);padding:14px;font-family:'Nunito',monospace;font-size:14px;font-weight:700;
+    color:var(--text);padding:12px;font-family:'Nunito',monospace;font-size:13.5px;font-weight:700;
     resize:vertical;outline:none;
   }
   textarea#resultInput:focus{border-color:var(--blue);}
   .helper-text{font-size:12.5px;color:var(--text-faint);margin-top:10px;line-height:1.5;font-weight:700;}
-  .submit-row{display:flex;justify-content:space-between;align-items:center;margin-top:14px;gap:8px;flex-wrap:wrap;}
-  .field-msg{font-size:13px;margin-top:10px;font-weight:800;min-height:16px;}
+  .submit-row{display:flex;justify-content:space-between;align-items:center;margin-top:10px;gap:8px;flex-wrap:wrap;}
+  .field-msg{font-size:13px;margin-top:8px;font-weight:800;min-height:0;}
   .field-msg.err{color:var(--red);}
   .field-msg.ok{color:var(--green-dark);}
+
+  .submit-panel{padding:14px 18px;margin-bottom:18px;}
+  .submit-panel h3{margin:0;font-size:15px;}
+  .submit-header{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;}
+  .submit-date{font-size:12px;color:var(--text-faint);font-weight:800;white-space:nowrap;}
+  .submit-collapsed{display:flex;align-items:center;gap:12px;}
+  .submit-collapsed .mini-grid{display:flex;flex-direction:column;gap:2px;flex-shrink:0;}
+  .submit-collapsed .mini-row{display:flex;gap:2px;}
+  .submit-collapsed .mini-tile{width:14px;height:14px;border-radius:3px;}
+  .submit-collapsed-info{flex:1;display:flex;flex-direction:column;gap:2px;min-width:0;}
+  .submit-collapsed-badge{color:var(--green-dark);font-weight:800;font-size:13px;}
+  .submit-collapsed-score{font-weight:700;color:var(--text-dim);font-size:12.5px;}
+  .submit-expanded{display:flex;flex-direction:column;}
 
   .admin-toggle{font-size:12.5px;color:var(--text-faint);text-align:right;margin-top:16px;cursor:pointer;font-weight:800;}
   .admin-toggle:hover{color:var(--text-dim);}
@@ -334,6 +347,28 @@
     color:var(--text);border-radius:var(--radius-sm);padding:10px 12px;font-size:14px;outline:none;font-weight:700;
   }
   .admin-form input:focus{border-color:var(--purple);}
+  .admin-divider{border-top:2px dashed var(--border);margin:14px 0 2px;}
+  .admin-manage-btn{align-self:flex-start;}
+  .admin-player-list{margin-top:12px;display:none;flex-direction:column;}
+  .admin-player-list.open{display:flex;}
+  .admin-add-player{
+    display:flex;flex-direction:column;gap:8px;
+    padding-bottom:14px;margin-bottom:12px;border-bottom:2px dashed var(--border);
+  }
+  .admin-player-row{
+    display:flex;align-items:center;gap:10px;padding:9px 0;
+    border-bottom:2px solid var(--surface-alt);font-size:14px;
+  }
+  .admin-player-row:last-child{border-bottom:none;}
+  .admin-player-row .apr-avatar{
+    width:26px;height:26px;border-radius:50%;flex-shrink:0;
+    background:linear-gradient(135deg,var(--green),var(--blue));
+    display:flex;align-items:center;justify-content:center;
+    font-weight:800;font-size:11px;color:#fff;font-family:var(--font-display);
+  }
+  .admin-player-row .apr-name{flex:1;font-weight:800;color:var(--text);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .admin-player-row .apr-actions{display:flex;gap:6px;flex-shrink:0;}
+  .admin-empty{font-size:13px;color:var(--text-faint);font-weight:700;padding:6px 0 2px;text-align:center;}
 
   .login-hint{
     background:var(--surface);border:2px dashed var(--border-strong);border-radius:var(--radius-lg);
@@ -407,6 +442,7 @@
         <div class="avatar" id="activeAvatar">?</div>
         <span class="pname" id="activePlayerName"></span>
       </div>
+      <button class="btn ghost tiny" id="editProfileBtn">✏️ Edit</button>
       <button class="btn ghost tiny" id="logoutBtn">Log out</button>
     </div>
     <button class="btn ghost icon-only tiny" id="refreshBtn" title="Pull latest data">🔄</button>
@@ -416,7 +452,31 @@
 
 <main class="layout">
   <section>
-    <div class="col-title">🏅 Ranking Board <span class="count" id="playerCount">0 players</span></div>
+    <div class="panel submit-panel" id="submitPanel" style="display:none;">
+      <div class="submit-header">
+        <h3><span class="badge-icon" style="background:var(--gold-bg);">✍️</span> Today's result</h3>
+        <span class="submit-date" id="resultDateLabel"></span>
+      </div>
+
+      <div id="submitCollapsed" class="submit-collapsed" style="display:none;">
+        <div class="mini-grid" id="submitCollapsedGrid"></div>
+        <div class="submit-collapsed-info">
+          <span class="submit-collapsed-badge">✅ Submitted</span>
+          <span class="submit-collapsed-score" id="submitCollapsedScore"></span>
+        </div>
+        <button class="btn ghost tiny" id="submitEditBtn">✏️ Edit</button>
+      </div>
+
+      <div id="submitExpanded" class="submit-expanded">
+        <textarea id="resultInput" placeholder="Paste your Wordle share text here, e.g.&#10;&#10;Wordle 1,860 6/6&#10;⬜⬜🟨⬜⬜&#10;⬜🟨⬜⬜⬜&#10;🟨⬜🟨⬜⬜&#10;⬜🟨🟨🟨⬜&#10;🟨⬜🟨🟩🟨&#10;🟩🟩🟩🟩🟩"></textarea>
+        <div class="submit-row">
+          <button class="btn primary small" id="saveResultBtn">✅ Save result</button>
+          <button class="btn ghost small" id="submitCancelBtn" style="display:none;">Cancel</button>
+        </div>
+        <div class="field-msg" id="resultMsg"></div>
+      </div>
+    </div>
+
     <div id="rankBoard"></div>
   </section>
 
@@ -435,6 +495,18 @@
         <input id="adminWordNum" type="number" placeholder="Wordle # (e.g. 1860)">
         <input id="adminWord" type="text" placeholder="Today's answer (5 letters)" maxlength="5" style="text-transform:uppercase;">
         <button class="btn gold small" id="adminSaveBtn">💾 Save word of the day</button>
+
+        <div class="admin-divider"></div>
+        <button class="btn ghost small admin-manage-btn" id="adminManageBtn">👥 Manage players</button>
+        <div class="admin-player-list" id="adminPlayerList">
+          <div class="admin-add-player">
+            <input id="adminNewName" type="text" placeholder="New username" maxlength="24" autocomplete="off">
+            <input id="adminNewPassword" type="password" placeholder="Password (min 4 characters)" autocomplete="new-password">
+            <input id="adminNewQuote" type="text" placeholder="Quote (optional)" maxlength="80">
+            <button class="btn primary small" id="adminAddPlayerBtn">➕ Add player</button>
+          </div>
+          <div id="adminPlayerRows"></div>
+        </div>
       </div>
     </div>
 
@@ -446,17 +518,6 @@
         <div class="stat-box"><div class="v" id="statGames">0</div><div class="l">Games played</div></div>
         <div class="stat-box"><div class="v" id="statAvg">–</div><div class="l">Avg guesses</div></div>
       </div>
-    </div>
-
-    <div class="panel" id="submitPanel" style="display:none;">
-      <h3><span class="badge-icon" style="background:var(--gold-bg);">✍️</span> Submit today's result</h3>
-      <textarea id="resultInput" placeholder="Paste your Wordle share text here, e.g.&#10;&#10;Wordle 1,860 6/6&#10;⬜⬜🟨⬜⬜&#10;⬜🟨⬜⬜⬜&#10;🟨⬜🟨⬜⬜&#10;⬜🟨🟨🟨⬜&#10;🟨⬜🟨🟩🟨&#10;🟩🟩🟩🟩🟩"></textarea>
-      <div class="helper-text">Copy the "Share" text straight from the Wordle results screen and paste it above. Fewer guesses ranks higher — a 1/6 beats a 6/6. Saving publishes to the board automatically.</div>
-      <div class="submit-row">
-        <button class="btn primary" id="saveResultBtn">✅ Save result</button>
-        <span style="font-size:12px;color:var(--text-faint);font-weight:800;" id="resultDateLabel"></span>
-      </div>
-      <div class="field-msg" id="resultMsg"></div>
     </div>
 
     <div class="panel" id="loginHintPanel">
@@ -518,6 +579,31 @@
     <div class="modal-actions">
       <button class="btn ghost" id="tmCancel">Cancel</button>
       <button class="btn primary" id="tmSave">Save & continue</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit player modal (self-service profile edit + admin edit) -->
+<div class="overlay" id="editPlayerModalOverlay">
+  <div class="modal">
+    <h2 id="editPlayerTitle">✏️ Edit profile</h2>
+    <p class="desc" id="editPlayerDesc">Update your username, password, or quote.</p>
+
+    <label for="editPlayerUsername">Username</label>
+    <input id="editPlayerUsername" type="text" maxlength="24" autocomplete="username">
+    <label for="editPlayerPassword">New password <span style="opacity:.6;">(leave blank to keep current)</span></label>
+    <input id="editPlayerPassword" type="password" placeholder="At least 4 characters" autocomplete="new-password">
+    <label for="editPlayerQuote">Quote <span style="opacity:.6;">(optional)</span></label>
+    <input id="editPlayerQuote" type="text" maxlength="80" placeholder="Im đi gobi.">
+
+    <div class="field-msg err" id="editPlayerMsg"></div>
+
+    <div class="modal-actions" style="justify-content:space-between;">
+      <button class="btn ghost" id="editPlayerDelete" style="display:none;color:var(--red);">🗑️ Delete account</button>
+      <div style="display:flex;gap:10px;">
+        <button class="btn ghost" id="editPlayerCancel">Cancel</button>
+        <button class="btn primary" id="editPlayerSave">Save changes</button>
+      </div>
     </div>
   </div>
 </div>
@@ -754,6 +840,9 @@
     renderSidePanel();
     renderLeaderboard();
     renderMyStats();
+    renderSubmitPanel();
+    const adminList = document.getElementById("adminPlayerList");
+    if(adminList && adminList.classList.contains("open")) renderAdminPlayerList();
   }
 
   function renderHeader(){
@@ -764,7 +853,6 @@
     document.getElementById("loggedOutControls").style.display = active ? "none" : "";
     document.getElementById("loggedInControls").style.display = active ? "flex" : "none";
     document.getElementById("loginHintPanel").style.display = active ? "none" : "";
-    document.getElementById("submitPanel").style.display = active ? "" : "none";
     document.getElementById("myStatsPanel").style.display = active ? "" : "none";
 
     if(active){
@@ -772,9 +860,34 @@
       document.getElementById("activePlayerName").textContent = active.name;
     }
 
-    document.getElementById("resultDateLabel").textContent = "for " + prettyDate(todayKey());
-    document.getElementById("playerCount").textContent = data.players.length + (data.players.length===1 ? " player" : " players");
   }
+
+  let submitExpandedOverride = false;
+  function renderSubmitPanel(){
+    const active = data.players.find(p=>p.id===currentPlayerId);
+    const panel = document.getElementById("submitPanel");
+    if(!active){ panel.style.display = "none"; return; }
+    panel.style.display = "";
+
+    const today = todayKey();
+    document.getElementById("resultDateLabel").textContent = prettyDate(today);
+    const record = active.results && active.results[today];
+    const collapsed = document.getElementById("submitCollapsed");
+    const expanded = document.getElementById("submitExpanded");
+    const cancelBtn = document.getElementById("submitCancelBtn");
+
+    if(record && !submitExpandedOverride){
+      collapsed.style.display = "flex";
+      expanded.style.display = "none";
+      document.getElementById("submitCollapsedGrid").innerHTML = renderMiniGrid(record.grid);
+      document.getElementById("submitCollapsedScore").textContent = scoreLabel(record.score);
+    }else{
+      collapsed.style.display = "none";
+      expanded.style.display = "";
+      cancelBtn.style.display = record ? "" : "none";
+    }
+  }
+
 
   function renderRankBoard(){
     const board = document.getElementById("rankBoard");
@@ -986,8 +1099,110 @@
 
   function logout(){
     currentPlayerId = "";
+    submitExpandedOverride = false;
     localStorage.removeItem(LS_PLAYER);
     renderAll();
+  }
+
+  /* ================= EDIT PLAYER (self-service + admin) ================= */
+  let editingPlayerId = null;
+  let editingIsAdmin = false;
+
+  function openEditPlayerModal(playerId, asAdmin){
+    const player = data.players.find(p=>p.id===playerId);
+    if(!player) return;
+    editingPlayerId = playerId;
+    editingIsAdmin = !!asAdmin;
+    document.getElementById("editPlayerTitle").textContent = asAdmin ? `✏️ Edit ${player.name}` : "✏️ Edit profile";
+    document.getElementById("editPlayerDesc").textContent = asAdmin
+      ? "Update this player's username, password, or quote, or delete their account."
+      : "Update your username, password, or quote.";
+    document.getElementById("editPlayerUsername").value = player.name;
+    document.getElementById("editPlayerPassword").value = "";
+    document.getElementById("editPlayerQuote").value = player.quote || "";
+    document.getElementById("editPlayerMsg").textContent = "";
+    document.getElementById("editPlayerDelete").style.display = asAdmin ? "" : "none";
+    document.getElementById("editPlayerModalOverlay").classList.add("open");
+    document.getElementById("editPlayerUsername").focus();
+  }
+  function closeEditPlayerModal(){
+    document.getElementById("editPlayerModalOverlay").classList.remove("open");
+    editingPlayerId = null;
+  }
+
+  async function saveEditPlayer(){
+    const msgEl = document.getElementById("editPlayerMsg");
+    msgEl.textContent = "";
+    const player = data.players.find(p=>p.id===editingPlayerId);
+    if(!player){ closeEditPlayerModal(); return; }
+
+    const newName = document.getElementById("editPlayerUsername").value.trim();
+    const newPassword = document.getElementById("editPlayerPassword").value;
+    const newQuote = document.getElementById("editPlayerQuote").value.trim();
+
+    if(!newName){ msgEl.textContent = "Username can't be empty."; return; }
+    if(newPassword && newPassword.length < 4){ msgEl.textContent = "Password needs at least 4 characters."; return; }
+    if(data.players.some(p=>p.id!==player.id && p.name.toLowerCase()===newName.toLowerCase())){
+      msgEl.textContent = "That username is already taken."; return;
+    }
+
+    player.name = newName;
+    player.quote = newQuote;
+    if(newPassword) player.passwordHash = await hashPassword(newPassword);
+
+    closeEditPlayerModal();
+    renderAll();
+    renderAdminPlayerList();
+    toast("Profile updated ✓", "ok");
+
+    publish((remoteData)=>{
+      let rp = remoteData.players.find(p=>p.id===player.id);
+      if(rp && remoteData.players.some(p=>p.id!==player.id && p.name.toLowerCase()===newName.toLowerCase())){
+        throw new Error("Username was just taken — try another one");
+      }
+      if(!rp){
+        rp = { id:player.id, name:player.name, quote:player.quote, passwordHash:player.passwordHash, results:{} };
+        remoteData.players.push(rp);
+      }else{
+        rp.name = player.name;
+        rp.quote = player.quote;
+        rp.passwordHash = player.passwordHash;
+      }
+    });
+  }
+
+  function deletePlayer(playerId){
+    const player = data.players.find(p=>p.id===playerId);
+    if(!player) return;
+    if(!confirm(`Delete ${player.name}'s account? This can't be undone.`)) return;
+    data.players = data.players.filter(p=>p.id!==player.id);
+    if(currentPlayerId === player.id){ currentPlayerId = ""; localStorage.removeItem(LS_PLAYER); }
+    closeEditPlayerModal();
+    renderAll();
+    renderAdminPlayerList();
+    publish((remoteData)=>{
+      remoteData.players = remoteData.players.filter(p=>p.id!==player.id);
+    });
+    toast(`${player.name} removed.`, "ok");
+  }
+
+  function renderAdminPlayerList(){
+    const wrap = document.getElementById("adminPlayerRows");
+    if(!wrap) return;
+    if(!data.players.length){
+      wrap.innerHTML = `<div class="admin-empty">No players yet.</div>`;
+      return;
+    }
+    wrap.innerHTML = data.players.map(p => `
+      <div class="admin-player-row">
+        <div class="apr-avatar">${initials(p.name)}</div>
+        <div class="apr-name">${escapeHtml(p.name)}</div>
+        <div class="apr-actions">
+          <button class="btn ghost tiny apr-edit" data-id="${p.id}" title="Edit">✏️</button>
+          <button class="btn ghost tiny apr-delete" data-id="${p.id}" title="Delete" style="color:var(--red);">🗑️</button>
+        </div>
+      </div>
+    `).join("");
   }
 
   let pendingPublishAction = null;
@@ -1003,6 +1218,15 @@
   document.getElementById("loginBtn").addEventListener("click", ()=>openAuthModal("login"));
   document.getElementById("loginHintBtn").addEventListener("click", ()=>openAuthModal("login"));
   document.getElementById("logoutBtn").addEventListener("click", logout);
+  document.getElementById("editProfileBtn").addEventListener("click", ()=>{
+    if(currentPlayerId) openEditPlayerModal(currentPlayerId, false);
+  });
+  document.getElementById("editPlayerCancel").addEventListener("click", closeEditPlayerModal);
+  document.getElementById("editPlayerModalOverlay").addEventListener("click", e=>{ if(e.target.id==="editPlayerModalOverlay") closeEditPlayerModal(); });
+  document.getElementById("editPlayerSave").addEventListener("click", saveEditPlayer);
+  document.getElementById("editPlayerDelete").addEventListener("click", ()=>{
+    if(editingPlayerId) deletePlayer(editingPlayerId);
+  });
   document.getElementById("authCancel").addEventListener("click", closeAuthModal);
   document.getElementById("authModalOverlay").addEventListener("click", e=>{ if(e.target.id==="authModalOverlay") closeAuthModal(); });
   document.getElementById("authSubmit").addEventListener("click", handleAuthSubmit);
@@ -1048,6 +1272,7 @@
     msgEl.textContent = "Saved! Publishing automatically…";
     msgEl.className = "field-msg ok";
     document.getElementById("resultInput").value = "";
+    submitExpandedOverride = false;
     renderAll();
 
     publish((remoteData)=>{
@@ -1055,6 +1280,24 @@
       if(!rp){ rp = { id:active.id, name:active.name, quote:active.quote, passwordHash:active.passwordHash, results:{} }; remoteData.players.push(rp); }
       rp.results[key] = record;
     });
+  });
+
+  document.getElementById("submitEditBtn").addEventListener("click", ()=>{
+    const active = data.players.find(p=>p.id===currentPlayerId);
+    const today = todayKey();
+    const record = active && active.results && active.results[today];
+    submitExpandedOverride = true;
+    document.getElementById("resultInput").value = record ? record.raw : "";
+    document.getElementById("resultMsg").textContent = "";
+    renderSubmitPanel();
+    document.getElementById("resultInput").focus();
+  });
+
+  document.getElementById("submitCancelBtn").addEventListener("click", ()=>{
+    submitExpandedOverride = false;
+    document.getElementById("resultInput").value = "";
+    document.getElementById("resultMsg").textContent = "";
+    renderSubmitPanel();
   });
 
   document.getElementById("adminToggle").addEventListener("click", ()=>{
@@ -1073,6 +1316,50 @@
     document.getElementById("adminPass").value = "";
     renderAll();
     publish((remoteData)=>{ remoteData.wordOfDay = wod; });
+  });
+
+  document.getElementById("adminManageBtn").addEventListener("click", ()=>{
+    const pass = document.getElementById("adminPass").value;
+    if(pass !== ADMIN_CODE){ toast("Enter the admin passcode above first.", "err"); return; }
+    const list = document.getElementById("adminPlayerList");
+    const opening = !list.classList.contains("open");
+    list.classList.toggle("open");
+    if(opening) renderAdminPlayerList();
+  });
+
+  document.getElementById("adminAddPlayerBtn").addEventListener("click", async ()=>{
+    const pass = document.getElementById("adminPass").value;
+    if(pass !== ADMIN_CODE){ toast("Wrong admin passcode.", "err"); return; }
+    const name = document.getElementById("adminNewName").value.trim();
+    const password = document.getElementById("adminNewPassword").value;
+    const quote = document.getElementById("adminNewQuote").value.trim();
+    if(!name){ toast("Enter a username.", "err"); return; }
+    if(password.length < 4){ toast("Password needs at least 4 characters.", "err"); return; }
+    if(data.players.some(p=>p.name.toLowerCase()===name.toLowerCase())){
+      toast("That username is already taken.", "err"); return;
+    }
+    const passwordHash = await hashPassword(password);
+    const newPlayer = { id: uid(), name, quote, passwordHash, results:{} };
+    data.players.push(newPlayer);
+    document.getElementById("adminNewName").value = "";
+    document.getElementById("adminNewPassword").value = "";
+    document.getElementById("adminNewQuote").value = "";
+    renderAll();
+    renderAdminPlayerList();
+    toast(`Player ${name} added ✓`, "ok");
+    publish((remoteData)=>{
+      if(remoteData.players.some(p=>p.name.toLowerCase()===name.toLowerCase())){
+        throw new Error("Username was just taken — try another one");
+      }
+      remoteData.players.push(newPlayer);
+    });
+  });
+
+  document.getElementById("adminPlayerRows").addEventListener("click", (e)=>{
+    const editBtn = e.target.closest(".apr-edit");
+    const delBtn = e.target.closest(".apr-delete");
+    if(editBtn){ openEditPlayerModal(editBtn.dataset.id, true); }
+    else if(delBtn){ deletePlayer(delBtn.dataset.id); }
   });
 
   /* ================= INIT ================= */

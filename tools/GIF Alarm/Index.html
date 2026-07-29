@@ -650,7 +650,7 @@ async function showPopup() {
       tick();
       clearInterval(pipTickTimer);
       pipTickTimer = setInterval(tick, 1000);
-      setTimeout(() => { renderIdleInPip(); clearInterval(pipTickTimer); }, dur);
+      setTimeout(() => { clearInterval(pipTickTimer); closeFloatingWindow(); }, dur);
       return;
     }
 
@@ -707,8 +707,6 @@ $('startBtn').addEventListener('click', async function() {
   saveState();
   lastIntervalTrigger = Date.now();
   schedulerTimer = setInterval(schedulerTick, 1000);
-
-  await openFloatingWindow();
 
   $('status').textContent = 'Status: running';
   $('status').className = 'running';

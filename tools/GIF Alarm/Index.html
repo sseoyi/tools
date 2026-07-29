@@ -256,7 +256,7 @@ state.gifData = state.gifData || null;
 state.gifName = state.gifName || '';
 state.gifSource = state.gifSource || null; // 'upload' | 'collection'
 state.gifCollectionFile = state.gifCollectionFile || '';
-state.duration = state.duration || 5;
+state.duration = state.duration || 30;
 state.scale = state.scale || 1.3;
 state.useTime = state.useTime || false;
 state.times = state.times || [];
@@ -616,7 +616,7 @@ function showFallbackOverlay(natW, natH) {
   clearInterval(overlayTimer);
   overlayTimer = setInterval(tick, 1000);
 
-  const dur = (parseFloat($('durationInput').value) || 5) * 1000;
+  const dur = (parseFloat($('durationInput').value) || 30) * 1000;
   setTimeout(() => {
     $('overlay').style.display = 'none';
     clearInterval(overlayTimer);
@@ -626,7 +626,7 @@ function showFallbackOverlay(natW, natH) {
 // ---------- Unified popup trigger ----------
 async function showPopup() {
   if (!hasGif()) return;
-  const dur = (parseFloat($('durationInput').value) || 5) * 1000;
+  const dur = (parseFloat($('durationInput').value) || 30) * 1000;
 
   // Get natural GIF dimensions first so we can size things without overlap
   const probe = new Image();
@@ -695,7 +695,7 @@ function schedulerTick() {
 
 $('startBtn').addEventListener('click', async function() {
   if (!hasGif()) { alert('Choose a GIF first.'); return; }
-  state.duration = parseFloat($('durationInput').value) || 5;
+  state.duration = parseFloat($('durationInput').value) || 30;
   state.scale = parseFloat($('scaleInput').value) || 1.0;
   state.useTime = $('useTimeCheck').checked;
   state.useInterval = $('useIntervalCheck').checked;

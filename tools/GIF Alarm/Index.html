@@ -247,14 +247,9 @@ Click <b>Start</b> — on Chrome/Edge this pops out a small always-on-top floati
 const $ = id => document.getElementById(id);
 
 // ---------- Collection config ----------
-// Path is relative to this HTML file. Add your GIF filenames below —
-// they must match the files you put in the "collection" folder next to this page.
-const COLLECTION_PATH = 'collection/';
-const COLLECTION_GIFS = [
-  // 'dancing-cat.gif',
-  // 'party-parrot.gif',
-  // 'kirby-dance.gif',
-];
+// The dropdown is populated automatically by asking GitHub what files are
+// in this folder — you never need to list filenames or rename anything here.
+const COLLECTION_API = 'https://api.github.com/repos/sseoti/tools/contents/tools/GIF%20Alarm/Collection';
 
 let state = JSON.parse(localStorage.getItem('gifPopupState') || '{}');
 state.gifData = state.gifData || null;
@@ -274,7 +269,7 @@ state.rainbow = state.rainbow || false;
 
 function getActiveGifSrc() {
   if (state.gifSource === 'collection' && state.gifCollectionFile) {
-    return COLLECTION_PATH + state.gifCollectionFile;
+    return state.gifCollectionFile; // full URL, fetched live from GitHub
   }
   if (state.gifSource === 'upload' && state.gifData) {
     return state.gifData;
@@ -309,30 +304,56 @@ function renderGifUI() {
   }
 }
 
-function populateCollection() {
+async function populateCollection() {
   const sel = $('collectionSelect');
   sel.innerHTML = '';
-  if (COLLECTION_GIFS.length === 0) {
+  const loadingOpt = document.createElement('option');
+  loadingOpt.textContent = 'Loading collection\u2026';
+  loadingOpt.disabled = true;
+  sel.appendChild(loadingOpt);
+  $('useCollectionBtn').disabled = true;
+
+  try {
+    const res = await fetch(COLLECTION_API);
+    if (!res.ok) throw new Error('GitHub API error ' + res.status);
+    const files = await res.json();
+    const gifs = Array.isArray(files)
+      ? files.filter(f => f.type === 'file' && /\.gif$/i.test(f.name))
+      : [];
+
+    sel.innerHTML = '';
+    if (gifs.length === 0) {
+      const opt = document.createElement('option');
+      opt.textContent = 'No GIFs added to the collection yet';
+      opt.disabled = true;
+      sel.appendChild(opt);
+      $('useCollectionBtn').disabled = true;
+      return;
+    }
+    gifs.sort((a, b) => a.name.localeCompare(b.name)).forEach(f => {
+      const opt = document.createElement('option');
+      opt.value = f.download_url;
+      opt.dataset.name = f.name;
+      opt.textContent = f.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
+      sel.appendChild(opt);
+    });
+    $('useCollectionBtn').disabled = false;
+    updateCollectionPreview();
+  } catch (e) {
+    sel.innerHTML = '';
     const opt = document.createElement('option');
-    opt.textContent = 'No GIFs added to the collection yet';
+    opt.textContent = 'Could not load collection (check connection)';
     opt.disabled = true;
     sel.appendChild(opt);
     $('useCollectionBtn').disabled = true;
-    return;
   }
-  COLLECTION_GIFS.forEach(f => {
-    const opt = document.createElement('option');
-    opt.value = f;
-    opt.textContent = f.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
-    sel.appendChild(opt);
-  });
-  updateCollectionPreview();
 }
 
 function updateCollectionPreview() {
-  const f = $('collectionSelect').value;
-  if (f) {
-    $('collectionPreview').src = COLLECTION_PATH + f;
+  const sel = $('collectionSelect');
+  const url = sel.value;
+  if (url) {
+    $('collectionPreview').src = url;
     $('collectionPreview').style.display = 'block';
   } else {
     $('collectionPreview').style.display = 'none';
@@ -406,11 +427,13 @@ $('removeGifBtn').addEventListener('click', function() {
 $('collectionSelect').addEventListener('change', updateCollectionPreview);
 
 $('useCollectionBtn').addEventListener('click', function() {
-  const file = $('collectionSelect').value;
-  if (!file) { alert('Add GIF filenames to the collection list first.'); return; }
+  const sel = $('collectionSelect');
+  const url = sel.value;
+  if (!url) { alert('No GIF selected from the collection.'); return; }
+  const name = sel.selectedOptions[0] ? sel.selectedOptions[0].dataset.name : url;
   state.gifSource = 'collection';
-  state.gifCollectionFile = file;
-  state.gifName = file;
+  state.gifCollectionFile = url;
+  state.gifName = name;
   state.gifData = null;
   $('gifInput').value = '';
   saveState();

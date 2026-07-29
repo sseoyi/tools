@@ -160,6 +160,14 @@ Click <b>Start</b> — on Chrome/Edge this pops out a small always-on-top floati
         <button id="removeGifBtn" style="display:none; margin-top:6px;">Remove image</button>
       </div>
     </div>
+    <div style="margin-top:14px; padding-top:12px; border-top:1px solid var(--border);">
+      <div class="note" style="margin-bottom:6px;">Or pick from the collection folder:</div>
+      <div class="row">
+        <select id="collectionSelect" style="flex:1; padding:7px 9px; border:1px solid var(--border); border-radius:8px; font-size:14px;"></select>
+        <button id="useCollectionBtn">Use this</button>
+      </div>
+      <img id="collectionPreview" style="display:none; max-width:90px; max-height:90px; margin-top:8px; border:2px solid var(--border); border-radius:10px;">
+    </div>
   </div>
 
   <div class="card">
@@ -238,9 +246,21 @@ Click <b>Start</b> — on Chrome/Edge this pops out a small always-on-top floati
 <script>
 const $ = id => document.getElementById(id);
 
+// ---------- Collection config ----------
+// Path is relative to this HTML file. Add your GIF filenames below —
+// they must match the files you put in the "collection" folder next to this page.
+const COLLECTION_PATH = 'collection/';
+const COLLECTION_GIFS = [
+  // 'dancing-cat.gif',
+  // 'party-parrot.gif',
+  // 'kirby-dance.gif',
+];
+
 let state = JSON.parse(localStorage.getItem('gifPopupState') || '{}');
 state.gifData = state.gifData || null;
 state.gifName = state.gifName || '';
+state.gifSource = state.gifSource || null; // 'upload' | 'collection'
+state.gifCollectionFile = state.gifCollectionFile || '';
 state.duration = state.duration || 5;
 state.scale = state.scale || 1.3;
 state.useTime = state.useTime || false;
@@ -251,6 +271,17 @@ state.bgTransparent = state.bgTransparent !== undefined ? state.bgTransparent : 
 state.bgColor = state.bgColor || '#ffe6f7';
 state.timeColor = state.timeColor || '#2b2b3a';
 state.rainbow = state.rainbow || false;
+
+function getActiveGifSrc() {
+  if (state.gifSource === 'collection' && state.gifCollectionFile) {
+    return COLLECTION_PATH + state.gifCollectionFile;
+  }
+  if (state.gifSource === 'upload' && state.gifData) {
+    return state.gifData;
+  }
+  return null;
+}
+function hasGif() { return !!getActiveGifSrc(); }
 
 function saveState() {
   try {
@@ -264,15 +295,47 @@ function saveState() {
 function isValidHex(v) { return /^#([0-9a-fA-F]{6})$/.test(v); }
 
 function renderGifUI() {
-  if (state.gifData) {
-    $('gifPreview').src = state.gifData;
+  const src = getActiveGifSrc();
+  if (src) {
+    $('gifPreview').src = src;
     $('gifPreview').style.display = 'block';
-    $('gifFileName').textContent = state.gifName || 'GIF selected';
+    const label = state.gifSource === 'collection' ? `From collection: ${state.gifName}` : state.gifName || 'GIF selected';
+    $('gifFileName').textContent = label;
     $('removeGifBtn').style.display = 'inline-block';
   } else {
     $('gifPreview').style.display = 'none';
     $('gifFileName').textContent = 'No file selected';
     $('removeGifBtn').style.display = 'none';
+  }
+}
+
+function populateCollection() {
+  const sel = $('collectionSelect');
+  sel.innerHTML = '';
+  if (COLLECTION_GIFS.length === 0) {
+    const opt = document.createElement('option');
+    opt.textContent = 'No GIFs added to the collection yet';
+    opt.disabled = true;
+    sel.appendChild(opt);
+    $('useCollectionBtn').disabled = true;
+    return;
+  }
+  COLLECTION_GIFS.forEach(f => {
+    const opt = document.createElement('option');
+    opt.value = f;
+    opt.textContent = f.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
+    sel.appendChild(opt);
+  });
+  updateCollectionPreview();
+}
+
+function updateCollectionPreview() {
+  const f = $('collectionSelect').value;
+  if (f) {
+    $('collectionPreview').src = COLLECTION_PATH + f;
+    $('collectionPreview').style.display = 'block';
+  } else {
+    $('collectionPreview').style.display = 'none';
   }
 }
 
@@ -293,6 +356,7 @@ function renderFromState() {
   $('timeColorPicker').disabled = state.rainbow;
   $('timeColorHex').disabled = state.rainbow;
   renderTimesList();
+  populateCollection();
   renderGifUI();
   $('modeNote').textContent = ('documentPictureInPicture' in window)
     ? 'Floating window mode is supported in this browser \u2713'
@@ -318,6 +382,8 @@ $('gifInput').addEventListener('change', function(e) {
   reader.onload = function(evt) {
     state.gifData = evt.target.result;
     state.gifName = file.name;
+    state.gifSource = 'upload';
+    state.gifCollectionFile = '';
     renderGifUI();
     const saved = saveState();
     if (!saved) {
@@ -330,6 +396,22 @@ $('gifInput').addEventListener('change', function(e) {
 $('removeGifBtn').addEventListener('click', function() {
   state.gifData = null;
   state.gifName = '';
+  state.gifSource = null;
+  state.gifCollectionFile = '';
+  $('gifInput').value = '';
+  saveState();
+  renderGifUI();
+});
+
+$('collectionSelect').addEventListener('change', updateCollectionPreview);
+
+$('useCollectionBtn').addEventListener('click', function() {
+  const file = $('collectionSelect').value;
+  if (!file) { alert('Add GIF filenames to the collection list first.'); return; }
+  state.gifSource = 'collection';
+  state.gifCollectionFile = file;
+  state.gifName = file;
+  state.gifData = null;
   $('gifInput').value = '';
   saveState();
   renderGifUI();
@@ -469,7 +551,7 @@ function renderPopupInPip(natW, natH) {
   const colorStyle = state.rainbow ? '' : `color:${state.timeColor};`;
   pipWindow.document.getElementById('wrap').innerHTML = `
     <div id="pipTime" class="${cls}" style="${colorStyle}">--:--:--</div>
-    <div id="pipFrame"><img id="pipGif" src="${state.gifData}" width="${size.w}" height="${size.h}"></div>
+    <div id="pipFrame"><img id="pipGif" src="${getActiveGifSrc()}" width="${size.w}" height="${size.h}"></div>
   `;
 }
 
@@ -488,7 +570,7 @@ function showFallbackOverlay(natW, natH) {
   const size = computeDisplaySize(natW, natH, scale, vw, vh);
 
   $('overlay').style.background = state.bgTransparent ? 'transparent' : state.bgColor;
-  $('overlayGif').src = state.gifData;
+  $('overlayGif').src = getActiveGifSrc();
   $('overlayGif').width = size.w;
   $('overlayGif').height = size.h;
 
@@ -520,7 +602,7 @@ function showFallbackOverlay(natW, natH) {
 
 // ---------- Unified popup trigger ----------
 async function showPopup() {
-  if (!state.gifData) return;
+  if (!hasGif()) return;
   const dur = (parseFloat($('durationInput').value) || 5) * 1000;
 
   // Get natural GIF dimensions first so we can size things without overlap
@@ -551,7 +633,7 @@ async function showPopup() {
 
     showFallbackOverlay(natW, natH);
   };
-  probe.src = state.gifData;
+  probe.src = getActiveGifSrc();
 }
 
 $('previewBtn').addEventListener('click', showPopup);
@@ -589,7 +671,7 @@ function schedulerTick() {
 }
 
 $('startBtn').addEventListener('click', async function() {
-  if (!state.gifData) { alert('Choose a GIF first.'); return; }
+  if (!hasGif()) { alert('Choose a GIF first.'); return; }
   state.duration = parseFloat($('durationInput').value) || 5;
   state.scale = parseFloat($('scaleInput').value) || 1.0;
   state.useTime = $('useTimeCheck').checked;

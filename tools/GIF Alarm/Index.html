@@ -708,10 +708,7 @@ $('startBtn').addEventListener('click', async function() {
   lastIntervalTrigger = Date.now();
   schedulerTimer = setInterval(schedulerTick, 1000);
 
-  const gotPip = await openFloatingWindow();
-  if (!gotPip && document.documentElement.requestFullscreen) {
-    document.documentElement.requestFullscreen().catch(() => {});
-  }
+  await openFloatingWindow();
 
   $('status').textContent = 'Status: running';
   $('status').className = 'running';

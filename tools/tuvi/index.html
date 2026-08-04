@@ -208,35 +208,28 @@
     display:flex;
     align-items:center;
     justify-content:center;
-    min-height:64px;
-    padding:6px 4px 0;
+    min-height:78px;
+    padding:8px 4px 0;
   }
   .id-name-big{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+  }
+  .id-name-line{
     font-family:'DFVN Lavonia','Cormorant Garamond',serif;
     font-weight:400;
     color:var(--lav-900);
     text-align:center;
-    line-height:1.05;
+    line-height:1.15;
     white-space:nowrap;
-    font-size:40px;
+    font-size:34px;
   }
   .id-body{
     display:flex;
     gap:16px;
     margin-top:auto;
     align-items:flex-end;
-  }
-  .id-photo{
-    width:64px;height:80px;
-    border-radius:8px;
-    background:linear-gradient(160deg,var(--lav-300),var(--lav-500));
-    display:flex;align-items:center;justify-content:center;
-    color:#fff;
-    font-family:'DFVN Lavonia','Cormorant Garamond',serif;
-    font-size:28px;
-    flex-shrink:0;
-    border:2px solid rgba(255,255,255,.7);
-    box-shadow:0 4px 10px rgba(85,50,128,.25);
   }
   .id-info{flex:1;min-width:0;}
   .id-meta{
@@ -479,7 +472,7 @@
 </head>
 <body>
 
-  <div class="brand">
+  <div class="brand" id="brandBlock">
     <div class="eyebrow">Câu lạc bộ chiêm tinh</div>
     <h1>Tử Vi Hôm Nay</h1>
     <div class="sub">tấm thẻ nhỏ, vận mệnh lớn</div>
@@ -522,10 +515,12 @@
       <div class="card3d" id="card3d">
         <div class="face front">
           <div class="id-name-stage">
-            <div class="id-name-big" id="idName">—</div>
+            <div class="id-name-big">
+              <div class="id-name-line" id="idNameHo">—</div>
+              <div class="id-name-line" id="idNameTen">—</div>
+            </div>
           </div>
           <div class="id-body">
-            <div class="id-photo" id="idPhoto">☾</div>
             <div class="id-info">
               <div class="id-meta">
                 <div>Ngày sinh: <b id="idDob">—</b></div>
@@ -803,18 +798,24 @@
 
   /* ---------- auto-fit name text ---------- */
   function fitCardName(el, maxFontSize){
-    const stage = el.parentElement;
-    const minFontSize = 15;
+    const face = el.closest('.face.front');
+    const minFontSize = 14;
     let fontSize = maxFontSize;
     el.style.fontSize = fontSize + "px";
-    // shrink until it fits the stage width (with small side padding buffer)
-    const maxWidth = stage.clientWidth - 8;
+    // fit within the card face's inner width (face padding is 20px each side)
+    const maxWidth = (face ? face.clientWidth : 320) - 40;
     let guard = 0;
     while (el.scrollWidth > maxWidth && fontSize > minFontSize && guard < 60){
       fontSize -= 1;
       el.style.fontSize = fontSize + "px";
       guard++;
     }
+  }
+  function fitCardNameLines(){
+    const ho = document.getElementById("idNameHo");
+    const ten = document.getElementById("idNameTen");
+    if(ho) fitCardName(ho, 34);
+    if(ten) fitCardName(ten, 34);
   }
 
   /* ---------- rendering ---------- */
@@ -839,6 +840,8 @@
   function render(character){
     document.getElementById("formView").classList.add("hidden");
     document.getElementById("cardView").classList.remove("hidden");
+    const brandBlock = document.getElementById("brandBlock");
+    if(brandBlock) brandBlock.classList.add("hidden");
 
     const zodiac = getZodiac(character.dob);
     const code = memberCode(character.name, character.dob);
@@ -847,14 +850,16 @@
     const initial = character.name.trim().charAt(0).toUpperCase() || "☾";
 
     // --- front card ---
-    const idNameEl = document.getElementById("idName");
-    idNameEl.textContent = character.name;
+    const nameParts = character.name.trim().split(/\s+/);
+    const ho = nameParts.shift() || "—";
+    const ten = nameParts.join(" ") || "—";
+    document.getElementById("idNameHo").textContent = ho;
+    document.getElementById("idNameTen").textContent = ten;
     document.getElementById("idDob").textContent = fmtDob(character.dob);
     document.getElementById("idZodiac").textContent = zodiac;
     document.getElementById("idCode").textContent = code;
-    document.getElementById("idPhoto").textContent = initial;
     document.getElementById("idIssued").textContent = "Cấp: " + fmtDob(todayStr());
-    fitCardName(idNameEl, 40);
+    fitCardNameLines();
 
     const horo = buildHoroscope(character);
 
@@ -949,6 +954,8 @@
       localStorage.removeItem(KEY);
       document.getElementById("cardView").classList.add("hidden");
       document.getElementById("formView").classList.remove("hidden");
+      const brandBlock = document.getElementById("brandBlock");
+      if(brandBlock) brandBlock.classList.remove("hidden");
       document.getElementById("fName").value = "";
       document.getElementById("fDob").value = "";
       document.getElementById("fTime").value = "";
@@ -985,14 +992,14 @@
   // re-fit the name once the custom font finishes loading (avoids measuring with a fallback font)
   if (document.fonts && document.fonts.ready){
     document.fonts.ready.then(()=>{
-      const el = document.getElementById("idName");
-      if(el && el.textContent && el.textContent !== "—") fitCardName(el, 40);
+      const ho = document.getElementById("idNameHo");
+      if(ho && ho.textContent && ho.textContent !== "—") fitCardNameLines();
     });
   }
 
   window.addEventListener("resize", ()=>{
-    const el = document.getElementById("idName");
-    if(el && el.textContent && el.textContent !== "—") fitCardName(el, 40);
+    const ho = document.getElementById("idNameHo");
+    if(ho && ho.textContent && ho.textContent !== "—") fitCardNameLines();
   });
 
 })();

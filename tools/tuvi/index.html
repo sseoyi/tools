@@ -297,7 +297,7 @@
   /* ---------------- BELOW-CARD PANEL (full readable view) ---------------- */
   .panel{
     width:100%;
-    max-width:520px;
+    max-width:680px;
     margin-top:28px;
   }
   .panel-card{
@@ -338,7 +338,10 @@
     border-radius:14px;
     margin-bottom:10px;
     border-left:4px solid transparent;
+    cursor:pointer;
+    transition:background .15s;
   }
+  .section-block:hover{filter:brightness(0.98);}
   .section-block .sicon{
     font-size:20px;
     line-height:1;
@@ -349,7 +352,18 @@
     font-size:13.5px;
     font-weight:700;
     letter-spacing:.01em;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
   }
+  .section-block .chevron{
+    font-size:11px;
+    transition:transform .25s ease;
+    opacity:.7;
+    flex-shrink:0;
+  }
+  .section-block.open .chevron{transform:rotate(180deg);}
   .section-block p{
     margin:0;
     font-size:13.5px;
@@ -366,6 +380,27 @@
     background:rgba(0,0,0,.1);
   }
   .score span.on{background:currentColor;}
+
+  .section-detail{
+    max-height:0;
+    overflow:hidden;
+    transition:max-height .3s ease, opacity .25s ease, margin-top .3s ease;
+    opacity:0;
+    margin-top:0;
+  }
+  .section-block.open .section-detail{
+    max-height:240px;
+    opacity:1;
+    margin-top:10px;
+  }
+  .section-detail-inner{
+    padding-top:10px;
+    border-top:1px dashed currentColor;
+    font-size:12.5px;
+    line-height:1.6;
+    color:var(--ink);
+    opacity:.9;
+  }
 
   .tinhduyen{background:var(--cat-tinhduyen-bg);border-left-color:var(--cat-tinhduyen);color:var(--cat-tinhduyen);}
   .sunghiep{background:var(--cat-sunghiep-bg);border-left-color:var(--cat-sunghiep);color:var(--cat-sunghiep);}
@@ -534,7 +569,7 @@
         </div>
 
         <div class="actions">
-          <button class="btn" id="shareBtn">📤 Chia sẻ thẻ tử vi (JPEG)</button>
+          <button class="btn" id="shareBtn">📤 Chia sẻ thẻ tử vi</button>
           <button class="btn ghost" id="resetBtn">Tạo thẻ khác</button>
         </div>
       </div>
@@ -646,6 +681,29 @@
       "Uống đủ nước và tránh căng thẳng kéo dài để giữ tinh thần minh mẫn.",
       "Giấc ngủ chất lượng hôm nay sẽ quyết định năng suất của bạn ngày mai.",
       "Một cơn đau nhỏ nhắc bạn rằng đã đến lúc chậm lại và chăm sóc bản thân.",
+    ],
+  };
+
+  const DETAIL_POOL = {
+    "Tình duyên": [
+      "Sao Kim đang tạo góc chiếu thuận lợi trong ngày, giúp lời nói của bạn có sức nặng và dễ chạm đến cảm xúc người nghe hơn bình thường. Nếu đang độc thân, một cuộc gặp tình cờ có thể để lại ấn tượng lâu hơn bạn nghĩ. Nếu đã có đôi, đây là lúc thích hợp để cùng nhau ôn lại những kỷ niệm đẹp thay vì bàn chuyện thực tế khô khan.",
+      "Trực giác về mối quan hệ của bạn hôm nay khá chính xác, hãy tin vào cảm nhận đầu tiên khi trò chuyện với ai đó. Tránh vội kết luận chỉ dựa trên một tin nhắn hay thái độ nhất thời, mọi thứ cần thêm thời gian để rõ ràng. Một hành động nhỏ chân thành sẽ có giá trị hơn nhiều lời hứa hẹn lớn lao.",
+      "Năng lượng cảm xúc trong bạn khá dồi dào, nhưng cũng dễ khiến bạn suy nghĩ nhiều hơn cần thiết về những điều chưa chắc chắn. Hãy dành thời gian lắng nghe đối phương thay vì chỉ chờ đến lượt mình nói. Một cuộc trò chuyện thẳng thắn, dù ngắn, cũng có thể giải toả những hiểu lầm đã tồn tại lâu.",
+    ],
+    "Sự nghiệp": [
+      "Vị trí các vì sao cho thấy đây là thời điểm tốt để thể hiện năng lực thực sự thay vì chỉ làm việc theo thói quen. Cấp trên hoặc đối tác có xu hướng chú ý đến chi tiết nhỏ hôm nay, vì vậy sự cẩn thận sẽ được đánh giá cao hơn tốc độ. Đừng ngại đề xuất ý tưởng, ngay cả khi bạn chưa hoàn toàn chắc chắn về nó.",
+      "Nguồn năng lượng tư duy của bạn đang ở mức cao, thích hợp để giải quyết những việc đòi hỏi sự tập trung sâu. Tuy nhiên, tránh ôm đồm quá nhiều đầu việc cùng lúc vì dễ khiến chất lượng công việc giảm sút. Ưu tiên một việc quan trọng nhất và hoàn thành trọn vẹn sẽ mang lại cảm giác hài lòng hơn là làm dở nhiều thứ.",
+      "Một mối quan hệ hợp tác hoặc một cơ hội mới có thể xuất hiện bất ngờ trong hôm nay hoặc vài ngày tới. Hãy giữ thái độ cởi mở nhưng đừng vội cam kết trước khi hiểu rõ điều kiện đi kèm. Sự kiên nhẫn quan sát lúc này sẽ giúp bạn tránh được một quyết định vội vàng về sau.",
+    ],
+    "Tài lộc": [
+      "Dòng năng lượng tài chính hôm nay khá ổn định nhưng tiềm ẩn một vài khoản chi phát sinh ngoài kế hoạch. Trước khi mua sắm điều gì không thực sự cần thiết, hãy tự hỏi liệu nó có mang lại giá trị lâu dài hay chỉ là cảm hứng nhất thời. Ghi chép chi tiêu trong vài ngày tới sẽ giúp bạn nhìn rõ bức tranh tài chính của mình hơn.",
+      "Có dấu hiệu của một cơ hội tài chính nhỏ đến từ người quen hoặc một nguồn thu nhập phụ mà bạn từng bỏ qua. Đừng để sự do dự khiến bạn lỡ mất, nhưng cũng nên tìm hiểu kỹ trước khi đưa ra cam kết bằng tiền bạc. Vận may sẽ ủng hộ những ai biết cân nhắc thay vì hành động theo cảm xúc.",
+      "Đây là giai đoạn thích hợp để nhìn lại các khoản tiết kiệm và mục tiêu tài chính dài hạn của bạn. Một lời khuyên từ người có kinh nghiệm hơn có thể mở ra một góc nhìn bạn chưa từng nghĩ tới. Tránh cho vay mượn số tiền lớn trong thời điểm này để không vướng vào rắc rối không đáng có.",
+    ],
+    "Sức khỏe": [
+      "Cơ thể bạn đang gửi những tín hiệu nhỏ nhắc nhở rằng đã đến lúc chậm lại, dù bạn có xu hướng bỏ qua chúng vì bận rộn. Một giấc ngủ đủ giấc tối nay sẽ ảnh hưởng trực tiếp đến sự minh mẫn và tâm trạng của bạn ngày mai. Hãy thử dành ra vài phút hít thở sâu mỗi khi cảm thấy căng thẳng dâng lên.",
+      "Năng lượng thể chất của bạn hôm nay khá tốt, đây là thời điểm thuận lợi để bắt đầu lại một thói quen vận động đã bị gián đoạn. Tuy nhiên đừng gắng sức quá mức trong ngày đầu tiên, sự đều đặn quan trọng hơn cường độ. Chế độ ăn nhẹ nhàng, đủ nước sẽ giúp bạn duy trì phong độ tốt hơn.",
+      "Yếu tố tinh thần đang ảnh hưởng khá nhiều đến thể chất của bạn trong giai đoạn này. Một cuộc trò chuyện chân thành với người bạn tin tưởng có thể giúp giải toả những áp lực âm ỉ. Hãy cho phép bản thân nghỉ ngơi mà không cảm thấy áy náy, đó cũng là một phần của việc chăm sóc sức khỏe.",
     ],
   };
 
@@ -769,6 +827,7 @@
       const localSeed = mulberry32(seed + i*7919);
       result[c.key] = {
         text: pick(POOL[c.key], localSeed),
+        detail: pick(DETAIL_POOL[c.key], mulberry32(seed + i*7919 + 3331)),
         score: 2 + Math.floor(localSeed()*4) // 2..5
       };
     });
@@ -829,10 +888,14 @@
       block.innerHTML = `
         <div class="sicon">${c.icon}</div>
         <div style="flex:1">
-          <h4>${c.key}</h4>
+          <h4>${c.key}<span class="chevron">▾</span></h4>
           <p>${item.text}</p>
           <div class="score">${dots}</div>
+          <div class="section-detail"><div class="section-detail-inner">${item.detail}</div></div>
         </div>`;
+      block.addEventListener("click", ()=>{
+        block.classList.toggle("open");
+      });
       panelSections.appendChild(block);
     });
     document.getElementById("panelQuote").textContent = `"${horo.quote}"`;

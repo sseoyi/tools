@@ -580,28 +580,15 @@
         background:linear-gradient(155deg,#F3E8FC 0%,#DEC2F2 45%,#C6A9E6 100%);
         font-family:'Be Vietnam Pro',sans-serif;color:#3A2E4D;
         box-shadow:0 0 0 1px rgba(255,255,255,.6) inset;
-        padding:34px 38px;">
+        padding:32px 38px;">
 
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-        <div>
-          <div style="font-family:'DFVN Lavonia','Cormorant Garamond',serif;font-size:34px;color:#332056;">Tử Vi Hôm Nay</div>
-          <div style="font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:#553280;opacity:.8;margin-top:2px;">Thẻ thành viên câu lạc bộ chiêm tinh</div>
-        </div>
-        <div id="expIdChip" style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#fff;background:#6E44A3;padding:5px 14px;border-radius:999px;height:fit-content;">Hạng Sao</div>
+      <div style="display:flex;justify-content:space-between;align-items:flex-end;">
+        <div id="expName" style="font-family:'DFVN Lavonia','Cormorant Garamond',serif;font-weight:400;font-size:42px;color:#332056;line-height:1;">—</div>
+        <div id="expDate" style="font-size:11px;color:#553280;opacity:.85;text-align:right;">—</div>
       </div>
+      <div id="expMeta" style="font-size:12px;color:#553280;margin-top:6px;">—</div>
 
-      <div style="display:flex;gap:18px;align-items:center;margin-top:18px;">
-        <div id="expPhoto" style="width:58px;height:70px;border-radius:10px;background:linear-gradient(160deg,#C6A9E6,#8B5FC0);display:flex;align-items:center;justify-content:center;color:#fff;font-family:'DFVN Lavonia','Cormorant Garamond',serif;font-size:26px;border:2px solid rgba(255,255,255,.7);flex-shrink:0;">☾</div>
-        <div>
-          <div id="expName" style="font-size:22px;font-weight:700;color:#332056;">—</div>
-          <div id="expMeta" style="font-size:11px;color:#553280;margin-top:4px;">—</div>
-        </div>
-        <div style="margin-left:auto;text-align:right;">
-          <div id="expDate" style="font-size:11px;color:#553280;opacity:.85;">—</div>
-        </div>
-      </div>
-
-      <div id="expSections" style="display:flex;gap:10px;margin-top:20px;"></div>
+      <div id="expSections" style="display:flex;gap:10px;margin-top:22px;"></div>
 
       <div style="margin-top:18px;background:rgba(255,255,255,.55);border-radius:14px;padding:14px 18px;">
         <div style="font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:#C4547A;font-weight:700;margin-bottom:6px;">Lời khuyên hôm nay</div>
@@ -907,8 +894,6 @@
     document.getElementById("panelAdvice").textContent = `"${horo.advice}"`;
 
     // --- export template ---
-    document.getElementById("expIdChip").textContent = rank;
-    document.getElementById("expPhoto").textContent = initial;
     document.getElementById("expName").textContent = character.name;
     document.getElementById("expMeta").textContent = `Sinh ${fmtDob(character.dob)} · Cung ${zodiac}`;
     document.getElementById("expDate").textContent = todayDisplay();

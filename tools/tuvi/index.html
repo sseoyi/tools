@@ -576,11 +576,11 @@
   <!-- ============ OFFSCREEN EXPORT TEMPLATE ============ -->
   <div id="exportRoot">
     <div id="exportCard" style="
-        width:640px;height:400px;border-radius:28px;position:relative;overflow:hidden;
+        width:640px;position:relative;overflow:hidden;
         background:linear-gradient(155deg,#F3E8FC 0%,#DEC2F2 45%,#C6A9E6 100%);
         font-family:'Be Vietnam Pro',sans-serif;color:#3A2E4D;
-        box-shadow:0 0 0 1px rgba(255,255,255,.6) inset;
-        padding:32px 38px;">
+        display:flex;flex-direction:column;
+        padding:36px 40px;">
 
       <div style="display:flex;justify-content:space-between;align-items:flex-end;">
         <div id="expName" style="font-family:'DFVN Lavonia','Cormorant Garamond',serif;font-weight:400;font-size:42px;color:#332056;line-height:1;">—</div>
@@ -595,7 +595,7 @@
         <div id="expAdvice" style="font-size:15px;font-weight:700;color:#C4547A;line-height:1.4;">"…"</div>
       </div>
 
-      <div style="position:absolute;bottom:16px;left:38px;right:38px;display:flex;justify-content:space-between;font-size:8.5px;letter-spacing:.08em;text-transform:uppercase;color:#553280;opacity:.6;border-top:1px dashed rgba(85,50,128,.3);padding-top:8px;">
+      <div style="margin-top:22px;display:flex;justify-content:space-between;font-size:8.5px;letter-spacing:.08em;text-transform:uppercase;color:#553280;opacity:.6;border-top:1px dashed rgba(85,50,128,.3);padding-top:12px;">
         <span>tuvihomnay.card</span>
         <span id="expCode">—</span>
       </div>
@@ -954,7 +954,7 @@
     btn.disabled = true;
     try{
       const node = document.getElementById("exportCard");
-      const canvas = await html2canvas(node, {scale:2, backgroundColor:null, useCORS:true});
+      const canvas = await html2canvas(node, {scale:2, backgroundColor:"#DEC2F2", useCORS:true});
       const link = document.createElement("a");
       link.download = "tu-vi-hom-nay.jpg";
       link.href = canvas.toDataURL("image/jpeg", 0.95);

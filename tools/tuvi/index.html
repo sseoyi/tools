@@ -117,7 +117,7 @@
     color:var(--lav-700);
     margin:16px 0 6px;
   }
-  input[type=text], input[type=date], input[type=time], select{
+  input[type=text], input[type=time], select{
     width:100%;
     padding:12px 14px;
     border-radius:10px;
@@ -132,6 +132,8 @@
   input:focus, select:focus{border-color:var(--lav-400);}
   .row2{display:flex;gap:12px;}
   .row2 > div{flex:1;}
+  .row3{display:flex;gap:6px;}
+  .row3 > select{width:auto;flex:1;padding:12px 6px;text-align:center;}
 
   .btn{
     margin-top:26px;
@@ -488,8 +490,8 @@
 
     <div class="row2">
       <div>
-        <label for="fDob">Ngày sinh</label>
-        <input type="date" id="fDob">
+        <label for="fDob">Ngày sinh (dd/mm/yyyy)</label>
+        <input type="text" id="fDob" placeholder="dd/mm/yyyy" inputmode="numeric" maxlength="10">
       </div>
       <div>
         <label for="fTime">Giờ sinh (nếu biết)</label>
@@ -565,6 +567,7 @@
 
         <div class="actions">
           <button class="btn" id="shareBtn">📤 Chia sẻ thẻ tử vi</button>
+          <button class="btn ghost" id="copyBtn">📋 Copy tử vi để chat</button>
           <button class="btn ghost" id="resetBtn">Tạo thẻ khác</button>
         </div>
       </div>
@@ -774,6 +777,33 @@
     return "TV-" + h.padStart(6,"0");
   }
 
+  /* ---------- dob text input (dd/mm/yyyy) ---------- */
+  function populateDobSelects(){
+    const inp = document.getElementById("fDob");
+    if(!inp) return;
+    // auto-insert "/" as the user types digits
+    inp.addEventListener("input", ()=>{
+      let digits = inp.value.replace(/\D/g,"").slice(0,8);
+      let out = digits;
+      if(digits.length > 4) out = digits.slice(0,2) + "/" + digits.slice(2,4) + "/" + digits.slice(4);
+      else if(digits.length > 2) out = digits.slice(0,2) + "/" + digits.slice(2);
+      inp.value = out;
+    });
+  }
+  function getDobFromSelects(){
+    const val = (document.getElementById("fDob").value || "").trim();
+    const m = val.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if(!m) return "";
+    const d = Number(m[1]), mo = Number(m[2]), y = Number(m[3]);
+    if(d < 1 || d > 31 || mo < 1 || mo > 12) return "";
+    return `${y}-${String(mo).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+  }
+  function setDobSelects(iso){
+    if(!iso) return;
+    const [y,m,d] = iso.split("-");
+    document.getElementById("fDob").value = `${String(Number(d)).padStart(2,"0")}/${String(Number(m)).padStart(2,"0")}/${y}`;
+  }
+
   /* ---------- storage ---------- */
   const KEY = "tuviCharacter";
   function loadChar(){
@@ -806,6 +836,8 @@
   }
 
   /* ---------- rendering ---------- */
+  let currentCharacter = null;
+  let currentHoro = null;
   function buildHoroscope(character){
     const seed = hashStr(character.name + character.dob + todayStr());
     const rnd = mulberry32(seed);
@@ -849,6 +881,8 @@
     fitCardNameLines();
 
     const horo = buildHoroscope(character);
+    currentCharacter = character;
+    currentHoro = horo;
 
     // --- back card (mini) ---
     document.getElementById("backName").textContent = character.name;
@@ -917,7 +951,7 @@
   /* ---------- events ---------- */
   document.getElementById("createBtn").addEventListener("click", ()=>{
     const name = document.getElementById("fName").value.trim();
-    const dob = document.getElementById("fDob").value;
+    const dob = getDobFromSelects();
     const time = document.getElementById("fTime").value;
     const gender = document.getElementById("fGender").value;
 
@@ -942,7 +976,7 @@
       const brandBlock = document.getElementById("brandBlock");
       if(brandBlock) brandBlock.classList.remove("hidden");
       document.getElementById("fName").value = "";
-      document.getElementById("fDob").value = "";
+      populateDobSelects();
       document.getElementById("fTime").value = "";
     }
   });
@@ -968,10 +1002,55 @@
     }
   });
 
+  function buildCopyText(){
+    if(!currentCharacter || !currentHoro) return "";
+    const lines = [];
+    lines.push(`Tử vi ngày ${todayDisplay()}`);
+    lines.push(`${currentCharacter.name} - ${fmtDob(currentCharacter.dob)}`);
+    lines.push(`"${currentHoro.quote}"`);
+    CATS.forEach(c=>{
+      lines.push(`• ${c.key}: ${currentHoro[c.key].text}`);
+    });
+    lines.push(`Lời khuyên hôm nay: ${currentHoro.advice}`);
+    lines.push("");
+    lines.push("Tạo thẻ tử vi của bạn tại: https://sseoyi.github.io/tools/tools/tuvi/index.html");
+    return lines.join("\n");
+  }
+
+  document.getElementById("copyBtn").addEventListener("click", async ()=>{
+    const btn = document.getElementById("copyBtn");
+    const original = btn.textContent;
+    const text = buildCopyText();
+    if(!text) return;
+    try{
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        await navigator.clipboard.writeText(text);
+      } else {
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        ta.style.position = "fixed";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+      }
+      btn.textContent = "✅ Đã sao chép!";
+    }catch(e){
+      console.error(e);
+      btn.textContent = "❌ Lỗi, thử lại";
+    }finally{
+      setTimeout(()=>{ btn.textContent = original; }, 1800);
+    }
+  });
+
   /* ---------- init ---------- */
+  populateDobSelects();
   const existing = loadChar();
   if(existing && existing.name && existing.dob){
     render(existing);
+    setDobSelects(existing.dob);
   }
 
   // re-fit the name once the custom font finishes loading (avoids measuring with a fallback font)
